@@ -41,7 +41,7 @@ io.on('connection', function (socket) {
   }
   let onlineUsers = Array.from(userSocketIdMap.keys());
   console.log(onlineUsers);
-  socket.broadcast.emit('Online-users', { Online: onlineUsers });
+  io.emit('Online-users', { Online: onlineUsers });
   /* Disconnect socket */
   socket.on('disconnect', function () {
     if (userSocketIdMap.has(userName)) {
@@ -52,7 +52,7 @@ io.on('connection', function (socket) {
       }
       let onlineUsers = Array.from(userSocketIdMap.keys());
       console.log(onlineUsers);
-      socket.broadcast.emit('Online-users', { Online: onlineUsers });
+      io.emit('Online-users', { Online: onlineUsers });
     }
   });
 });
