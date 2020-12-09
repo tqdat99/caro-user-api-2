@@ -12,7 +12,16 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(logger('dev'));
-app.use(cors({ credentials: true, origin: 'http://172.22.176.1:5500' })); app.use(passport.initialize());
+app.use(cors({ credentials: false })); app.use(passport.initialize());
+
+//app.use(cors({ credentials: true, origin: 'http://172.22.176.1:5500' })); app.use(passport.initialize());
+
+app.use((req, res, next) => {
+  res.append('Access-Control-Allow-Origin', ['*']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 
 // set up routes
 app.use('/users/', userRoutes);
