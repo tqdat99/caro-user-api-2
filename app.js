@@ -68,6 +68,8 @@ io.on('connection', function (socket) {
       }
     });
   }
+  else
+    io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
 });
 
 server.listen(port, () => {
