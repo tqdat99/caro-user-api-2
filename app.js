@@ -12,7 +12,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(logger('dev'));
-app.use(cors());
+//app.use(cors());
 app.use(passport.initialize());
 
 //app.use(cors({ credentials: false, origin: 'http://172.22.176.1:5500' })); '
