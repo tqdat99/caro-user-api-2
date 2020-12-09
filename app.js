@@ -12,12 +12,13 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(logger('dev'));
-app.use(cors({ credentials: false })); app.use(passport.initialize());
+app.use(cors());
+app.use(passport.initialize());
 
-//app.use(cors({ credentials: true, origin: 'http://172.22.176.1:5500' })); app.use(passport.initialize());
+//app.use(cors({ credentials: false, origin: 'http://172.22.176.1:5500' })); '
 
 app.use((req, res, next) => {
-  res.append('Access-Control-Allow-Origin', '*');
+  res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.append('Access-Control-Allow-Headers', '*');
   next();
@@ -39,31 +40,59 @@ app.get('/', (req, res) => {
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const userSocketIdMap = new Map();
+const adminSocketIdMap = new Map();
 
 io.on('connection', function (socket) {
   console.log("socket.id:", socket.id);
   let userName = socket.handshake.query.userName;
-  if (!userSocketIdMap.has(userName)) {
-    userSocketIdMap.set(userName, new Set([socket.id]));
-  } else {
-    userSocketIdMap.get(userName).add(socket.id);
-  }
-  let onlineUsers = Array.from(userSocketIdMap.keys());
-  console.log(onlineUsers);
-  io.emit('Online-users', { Online: onlineUsers });
-  /* Disconnect socket */
-  socket.on('disconnect', function () {
-    if (userSocketIdMap.has(userName)) {
-      let userSocketIdSet = userSocketIdMap.get(userName);
-      userSocketIdSet.delete(socket.id);
-      if (userSocketIdSet.size == 0) {
-        userSocketIdMap.delete(userName);
-      }
-      let onlineUsers = Array.from(userSocketIdMap.keys());
-      console.log(onlineUsers);
-      io.emit('Online-users', { Online: onlineUsers });
+  let adminId = socket.handshake.query.adminId;
+  console.log(userName); console.log(adminId);
+  if (userName) {
+    if (!userSocketIdMap.has(userName)) {
+      userSocketIdMap.set(userName, new Set([socket.id]));
+    } else {
+      userSocketIdMap.get(userName).add(socket.id);
     }
-  });
+    let onlineUsers = Array.from(userSocketIdMap.keys());
+    console.log(onlineUsers);
+    io.emit('Online-users', { Online: onlineUsers });
+    /* Disconnect socket */
+    socket.on('disconnect', function () {
+      if (userSocketIdMap.has(userName)) {
+        let userSocketIdSet = userSocketIdMap.get(userName);
+        userSocketIdSet.delete(socket.id);
+        if (userSocketIdSet.size == 0) {
+          userSocketIdMap.delete(userName);
+        }
+        let onlineUsers = Array.from(userSocketIdMap.keys());
+        console.log(onlineUsers);
+        io.emit('Online-users', { Online: onlineUsers });
+      }
+    });
+  }
+  else if (adminId) {
+    if (!adminSocketIdMap.has(userName)) {
+      adminSocketIdMap.set(userName, new Set([socket.id]));
+    } else {
+      adminSocketIdMap.get(userName).add(socket.id);
+    }
+    let onlineUsers = Array.from(adminSocketIdMap.keys());
+    console.log(onlineUsers);
+    io.emit('Online-users', { Online: onlineUsers });
+    /* Disconnect socket */
+    socket.on('disconnect', function () {
+      if (adminSocketIdMap.has(userName)) {
+        let userSocketIdSet = adminSocketIdMap.get(userName);
+        userSocketIdSet.delete(socket.id);
+        if (userSocketIdSet.size == 0) {
+          adminSocketIdMap.delete(userName);
+        }
+        let onlineUsers = Array.from(adminSocketIdMap.keys());
+        console.log(onlineUsers);
+        io.emit('Online-users', { Online: onlineUsers });
+      }
+    });
+  }
 });
 
 server.listen(port, () => {
