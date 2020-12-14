@@ -41,6 +41,7 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const userSocketIdMap = new Map();
 
+
 io.on('connection', function (socket) {
   console.log("socket.id:", socket.id);
   let userName = socket.handshake.query.userName;
@@ -54,6 +55,12 @@ io.on('connection', function (socket) {
     let onlineUsers = Array.from(userSocketIdMap.keys());
     console.log(onlineUsers);
     io.emit('Online-users', { Online: onlineUsers });
+
+
+    socket.on('send', function (data) {
+      io.sockets.emit('send', data);
+    });
+
     /* Disconnect socket */
     socket.on('disconnect', function () {
       if (userSocketIdMap.has(userName)) {
