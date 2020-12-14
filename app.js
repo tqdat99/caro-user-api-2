@@ -62,7 +62,8 @@ io.on('connection', function (client) {
     }
     let onlineUsers = Array.from(userSocketIdMap.keys());
     io.emit('online users', { Online: onlineUsers });
-
+    let rooms = Array.from(roomIdMap.keys());
+    io.emit('get rooms', { Rooms: rooms });
     /* Disconnect socket */
     client.on('disconnect', function () {
       if (userSocketIdMap.has(username)) {
@@ -72,9 +73,7 @@ io.on('connection', function (client) {
           userSocketIdMap.delete(username);
         }
         let onlineUsers = Array.from(userSocketIdMap.keys());
-        let rooms = Array.from(roomIdMap.keys());
         io.emit('online users', { Online: onlineUsers });
-        io.emit('get rooms', { Rooms: rooms });
       }
     });
 
@@ -109,7 +108,7 @@ io.on('connection', function (client) {
             room = key;
         });
       }
-      console.log(room);
+      //console.log(room);
       let timestamp = (new Date()).toISOString();
       client.to(room).emit('chat', {
         username: username,

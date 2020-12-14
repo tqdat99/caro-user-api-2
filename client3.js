@@ -1,6 +1,6 @@
 const io = require('socket.io-client');
 
-const socket = io('http://localhost:5034?username=dat3');
+const socket = io('https://caro-user-api-2.herokuapp.com?username=dat3');
 
 socket.on('connect', () => {
     console.log(socket.id);
@@ -8,6 +8,8 @@ socket.on('connect', () => {
         console.log(error);
     });
     socket.emit('chat', 'hi dat4');
+    socket.emit('step', [2, 3]);
+
 });
 
 socket.on('chat', function (data) {

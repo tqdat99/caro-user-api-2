@@ -4,7 +4,7 @@ const socket = io('https://caro-user-api-2.herokuapp.com?username=dat2');
 
 socket.on('connect', () => {
     console.log(socket.id);
-    socket.emit('join', 'room1', function (error) {
+    socket.emit('create', 'room1', function (error) {
         console.log(error);
     });
     socket.emit('chat', 'hi dat1');
