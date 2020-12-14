@@ -79,6 +79,7 @@ io.on('connection', function (client) {
     });
 
     client.on('create', function (room, callback) {
+      console.log('create:', roomIdMap);
       if (roomIdMap.has(room)) {
         callback('Room already existed.');
       }
