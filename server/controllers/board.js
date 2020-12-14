@@ -1,4 +1,5 @@
-var passport = require('passport');
+const mongoose = require('mongoose');
+const passport = require('passport');
 require('../passport/passport')(passport);
 
 const Board = require('../models/board');
@@ -34,7 +35,7 @@ module.exports.createBoard = function (req, res) {
     .then((board) => {
       return res.status(201).json({
         success: true,
-        message: 'User created successfully',
+        message: 'Board created successfully',
         data: board,
       });
     })
@@ -50,16 +51,16 @@ module.exports.createBoard = function (req, res) {
 //Get board
 module.exports.getBoardById = function (req, res) {
   Board.findById(req.params.boardId, function (err, board) {
-      if (err)
+    if (err)
       res.status(500).json({
         success: false,
         message: 'Server error. Please try again.',
         error: error.message,
       });
-      res.status(201).json({
-        success: true,
-        message: 'Board',
-        data: board,
-      });
+    res.status(201).json({
+      success: true,
+      message: 'Board',
+      data: board,
+    });
   });
 };

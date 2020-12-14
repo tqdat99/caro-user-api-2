@@ -9,7 +9,8 @@ require('./server/db/db');
 
 const ClientManager = require('./server/utils/ClientManager')
 const ChatroomManager = require('./server/utils/ChatroomManager')
-const makeHandlers = require('./server/utils/handlers')
+const makeHandlers = require('./server/utils/handlers');
+const { forEach } = require('./server/config/chatrooms');
 
 const clientManager = ClientManager()
 const chatroomManager = ChatroomManager()
@@ -49,82 +50,95 @@ app.get('/', (req, res) => {
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const userSocketIdMap = new Map();
-//const userSocketIdMap = new Map();
+const roomIdMap = new Map();
 
 io.on('connection', function (client) {
-  const {
-    handleRegister,
-    handleJoin,
-    handleLeave,
-    handleMessage,
-    handleGetChatrooms,
-    handleGetAvailableUsers,
-    handleDisconnect
-  } = makeHandlers(client, clientManager, chatroomManager)
+  let username = client.handshake.query.username;
+  if (username) {
+    if (!userSocketIdMap.has(username)) {
+      userSocketIdMap.set(username, new Set([client.id]));
+    } else {
+      userSocketIdMap.get(username).add(client.id);
+    }
+    let onlineUsers = Array.from(userSocketIdMap.keys());
+    io.emit('online users', { Online: onlineUsers });
 
-  console.log('client connected...', client.id)
-  clientManager.addClient(client)
+    /* Disconnect socket */
+    client.on('disconnect', function () {
+      if (userSocketIdMap.has(username)) {
+        let userSocketIdSet = userSocketIdMap.get(username);
+        userSocketIdSet.delete(client.id);
+        if (userSocketIdSet.size == 0) {
+          userSocketIdMap.delete(username);
+        }
+        let onlineUsers = Array.from(userSocketIdMap.keys());
+        let rooms = Array.from(roomIdMap.keys());
+        io.emit('online users', { Online: onlineUsers });
+        io.emit('get rooms', { Rooms: rooms });
+      }
+    });
 
-  client.on('register', handleRegister)
+    client.on('create', function (room, callback) {
+      if (roomIdMap.has(room)) {
+        callback('Room already existed.');
+      }
+      else {
+        client.join(room);
+        roomIdMap.set(room, new Array(username));
+        let rooms = Array.from(roomIdMap.keys());
+        io.emit('get rooms', { Rooms: rooms });
+      }
+    });
 
-  client.on('join', handleJoin)
+    client.on('join', function (room, callback) {
+      if (roomIdMap.has(room)) {
+        client.join(room);
+        roomIdMap.get(room).push(username);
+      }
+      else {
+        callback('Room does not exist.');
+      }
+    });
 
-  client.on('leave', handleLeave)
+    client.on('chat', function (message) {
+      let room;
+      for (let [key, value] of roomIdMap.entries()) {
+        value.forEach(valueItem => {
+          if (valueItem === username)
+            room = key;
+        });
+      }
+      console.log(room);
+      let timestamp = (new Date()).toISOString();
+      client.to(room).emit('chat', {
+        username: username,
+        message: message,
+        time: timestamp
+      });
+    });
 
-  client.on('message', handleMessage)
 
-  client.on('chatrooms', handleGetChatrooms)
+    client.on('step', function (step) {
+      let room;
+      for (let [key, value] of roomIdMap.entries()) {
+        value.forEach(valueItem => {
+          if (valueItem === username)
+            room = key;
+        });
+      }
+      console.log(room);
+      let timestamp = (new Date()).toISOString();
+      client.to(room).emit('step', {
+        username: username,
+        step: step,
+        time: timestamp
+      });
+    });
 
-  client.on('availableUsers', handleGetAvailableUsers)
-
-  client.on('disconnect', function () {
-    console.log('client disconnect...', client.id)
-    handleDisconnect()
-  })
-
-  client.on('error', function (err) {
-    console.log('received error from client:', client.id)
-    console.log(err)
-  })
+  } else
+    io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
 })
 
-// io.on('connection', function (socket) {
-//   console.log("socket.id:", socket.id);
-//   let userName = socket.handshake.query.userName;
-//   console.log(userName);
-//   if (userName) {
-//     if (!userSocketIdMap.has(userName)) {
-//       userSocketIdMap.set(userName, new Set([socket.id]));
-//     } else {
-//       userSocketIdMap.get(userName).add(socket.id);
-//     }
-//     let onlineUsers = Array.from(userSocketIdMap.keys());
-//     console.log(onlineUsers);
-//     io.emit('Online-users', { Online: onlineUsers });
-
-//     socket.on('create board')
-
-//     socket.on('chat', function (data) {
-//       io.emit('chat', data);
-//     });
-
-//     /* Disconnect socket */
-//     socket.on('disconnect', function () {
-//       if (userSocketIdMap.has(userName)) {
-//         let userSocketIdSet = userSocketIdMap.get(userName);
-//         userSocketIdSet.delete(socket.id);
-//         if (userSocketIdSet.size == 0) {
-//           userSocketIdMap.delete(userName);
-//         }
-//         let onlineUsers = Array.from(userSocketIdMap.keys());
-//         console.log(onlineUsers);
-//         io.emit('Online-users', { Online: onlineUsers });
-//       }
-//     });
-//   }
-//   else
-//     io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
-// });
 
 server.listen(port, () => {
   console.log(`Our server is running on port ${port}`);

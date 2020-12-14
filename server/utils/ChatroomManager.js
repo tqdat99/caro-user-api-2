@@ -2,13 +2,7 @@ const Chatroom = require('./Chatroom')
 const chatroomTemplates = require('../config/chatrooms')
 
 module.exports = function () {
-  // mapping of all available chatrooms
-  const chatrooms = new Map(
-    chatroomTemplates.map(c => [
-      c.name,
-      Chatroom(c)
-    ])
-  )
+  const chatrooms = new Map()
 
   function removeClient(client) {
     chatrooms.forEach(c => c.removeUser(client))
