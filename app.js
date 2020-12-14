@@ -66,15 +66,29 @@ io.on('connection', function (client) {
     io.emit('get rooms', { Rooms: rooms });
     /* Disconnect socket */
     client.on('disconnect', function () {
-      if (userSocketIdMap.has(username)) {
-        let userSocketIdSet = userSocketIdMap.get(username);
-        userSocketIdSet.delete(client.id);
-        if (userSocketIdSet.size == 0) {
-          userSocketIdMap.delete(username);
-        }
-        let onlineUsers = Array.from(userSocketIdMap.keys());
-        io.emit('online users', { Online: onlineUsers });
+      let userSocketIdSet = userSocketIdMap.get(username);
+      userSocketIdSet.delete(client.id);
+      if (userSocketIdSet.size == 0) {
+        userSocketIdMap.delete(username);
       }
+      let onlineUsers = Array.from(userSocketIdMap.keys());
+      io.emit('online users', { Online: onlineUsers });
+
+      let room;
+      for (let [key, value] of roomIdMap.entries()) {
+        value.forEach(valueItem => {
+          if (valueItem === username)
+            room = key;
+        });
+      }
+      let roomUsers = roomIdMap.get(room);
+      var index = roomUsers.indexOf(username);
+      roomUsers.splice(index, 1);
+      if (roomUsers.size == 0) {
+        roomIdMap.delete(room);
+      }
+      console.log(roomIdMap);
+
     });
 
     client.on('create', function (room, callback) {
@@ -145,3 +159,4 @@ server.listen(port, () => {
 });
 
 module.exports.app = server;
+
