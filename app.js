@@ -6,6 +6,15 @@ const cors = require('cors')
 const passport = require('passport');
 require('./server/db/db');
 
+
+const ClientManager = require('./server/utils/ClientManager')
+const ChatroomManager = require('./server/utils/ChatroomManager')
+const makeHandlers = require('./server/utils/handlers')
+
+const clientManager = ClientManager()
+const chatroomManager = ChatroomManager()
+
+
 // set up dependencies
 const app = express();
 
@@ -40,44 +49,82 @@ app.get('/', (req, res) => {
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const userSocketIdMap = new Map();
+//const userSocketIdMap = new Map();
 
+io.on('connection', function (client) {
+  const {
+    handleRegister,
+    handleJoin,
+    handleLeave,
+    handleMessage,
+    handleGetChatrooms,
+    handleGetAvailableUsers,
+    handleDisconnect
+  } = makeHandlers(client, clientManager, chatroomManager)
 
-io.on('connection', function (socket) {
-  console.log("socket.id:", socket.id);
-  let userName = socket.handshake.query.userName;
-  console.log(userName);
-  if (userName) {
-    if (!userSocketIdMap.has(userName)) {
-      userSocketIdMap.set(userName, new Set([socket.id]));
-    } else {
-      userSocketIdMap.get(userName).add(socket.id);
-    }
-    let onlineUsers = Array.from(userSocketIdMap.keys());
-    console.log(onlineUsers);
-    io.emit('Online-users', { Online: onlineUsers });
+  console.log('client connected...', client.id)
+  clientManager.addClient(client)
 
+  client.on('register', handleRegister)
 
-    socket.on('send', function (data) {
-      io.sockets.emit('send', data);
-    });
+  client.on('join', handleJoin)
 
-    /* Disconnect socket */
-    socket.on('disconnect', function () {
-      if (userSocketIdMap.has(userName)) {
-        let userSocketIdSet = userSocketIdMap.get(userName);
-        userSocketIdSet.delete(socket.id);
-        if (userSocketIdSet.size == 0) {
-          userSocketIdMap.delete(userName);
-        }
-        let onlineUsers = Array.from(userSocketIdMap.keys());
-        console.log(onlineUsers);
-        io.emit('Online-users', { Online: onlineUsers });
-      }
-    });
-  }
-  else
-    io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
-});
+  client.on('leave', handleLeave)
+
+  client.on('message', handleMessage)
+
+  client.on('chatrooms', handleGetChatrooms)
+
+  client.on('availableUsers', handleGetAvailableUsers)
+
+  client.on('disconnect', function () {
+    console.log('client disconnect...', client.id)
+    handleDisconnect()
+  })
+
+  client.on('error', function (err) {
+    console.log('received error from client:', client.id)
+    console.log(err)
+  })
+})
+
+// io.on('connection', function (socket) {
+//   console.log("socket.id:", socket.id);
+//   let userName = socket.handshake.query.userName;
+//   console.log(userName);
+//   if (userName) {
+//     if (!userSocketIdMap.has(userName)) {
+//       userSocketIdMap.set(userName, new Set([socket.id]));
+//     } else {
+//       userSocketIdMap.get(userName).add(socket.id);
+//     }
+//     let onlineUsers = Array.from(userSocketIdMap.keys());
+//     console.log(onlineUsers);
+//     io.emit('Online-users', { Online: onlineUsers });
+
+//     socket.on('create board')
+
+//     socket.on('chat', function (data) {
+//       io.emit('chat', data);
+//     });
+
+//     /* Disconnect socket */
+//     socket.on('disconnect', function () {
+//       if (userSocketIdMap.has(userName)) {
+//         let userSocketIdSet = userSocketIdMap.get(userName);
+//         userSocketIdSet.delete(socket.id);
+//         if (userSocketIdSet.size == 0) {
+//           userSocketIdMap.delete(userName);
+//         }
+//         let onlineUsers = Array.from(userSocketIdMap.keys());
+//         console.log(onlineUsers);
+//         io.emit('Online-users', { Online: onlineUsers });
+//       }
+//     });
+//   }
+//   else
+//     io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
+// });
 
 server.listen(port, () => {
   console.log(`Our server is running on port ${port}`);
