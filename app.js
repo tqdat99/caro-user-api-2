@@ -6,41 +6,18 @@ const cors = require('cors')
 const passport = require('passport');
 require('./server/db/db');
 
-
-const ClientManager = require('./server/utils/ClientManager')
-const ChatroomManager = require('./server/utils/ChatroomManager')
-const makeHandlers = require('./server/utils/handlers');
-const { forEach } = require('./server/config/chatrooms');
-
-const clientManager = ClientManager()
-const chatroomManager = ChatroomManager()
-
-
 // set up dependencies
 const app = express();
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(logger('dev'));
-//app.use(cors());
+app.use(cors());
 app.use(passport.initialize());
-
-//app.use(cors({ credentials: false, origin: 'http://172.22.176.1:5500' })); '
-
-app.use((req, res, next) => {
-  res.append('Access-Control-Allow-Origin', ['*']);
-  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-  res.append('Access-Control-Allow-Headers', '*');
-  next();
-});
-
-// set up routes
-app.use('/users/', userRoutes);
-
 
 // set up port
 const port = process.env.PORT || 5034;
 // set up route
+app.use('/users/', userRoutes);
 app.get('/', (req, res) => {
   res.status(200).json({
     message: 'Welcome to Project with Nodejs Express and MongoDB',
@@ -51,112 +28,160 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const userSocketIdMap = new Map();
 const roomIdMap = new Map();
-
 io.on('connection', function (client) {
   let username = client.handshake.query.username;
-  if (username) {
+  if (username !== 'null') {
+    console.log('CONNECT: ', username)
+    /* Handshake socket */
     if (!userSocketIdMap.has(username)) {
       userSocketIdMap.set(username, new Set([client.id]));
     } else {
       userSocketIdMap.get(username).add(client.id);
     }
     let onlineUsers = Array.from(userSocketIdMap.keys());
-    io.emit('online users', { Online: onlineUsers });
-    let rooms = Array.from(roomIdMap.keys());
-    io.emit('get rooms', { Rooms: rooms });
+    io.emit('Online-users', { Online: onlineUsers });
+    io.emit('Get-rooms', { Rooms: Array.from(roomIdMap) });
+
     /* Disconnect socket */
     client.on('disconnect', function () {
+      console.log('DISCONNECT: ', username)
       let userSocketIdSet = userSocketIdMap.get(username);
       userSocketIdSet.delete(client.id);
-      if (userSocketIdSet.size == 0) {
+      if (userSocketIdSet.size === 0) {
         userSocketIdMap.delete(username);
       }
       let onlineUsers = Array.from(userSocketIdMap.keys());
-      io.emit('online users', { Online: onlineUsers });
 
-      let room;
+      let room = null
       for (let [key, value] of roomIdMap.entries()) {
         value.forEach(valueItem => {
           if (valueItem === username)
             room = key;
         });
       }
-      let roomUsers = roomIdMap.get(room);
-      var index = roomUsers.indexOf(username);
-      roomUsers.splice(index, 1);
-      if (roomUsers.size == 0) {
-        roomIdMap.delete(room);
+      if (room) {
+        let roomUsers = roomIdMap.get(room);
+        const index = roomUsers.indexOf(username);
+        roomUsers.splice(index, 1);
+        if (roomUsers.size === 0) {
+          roomIdMap.delete(room);
+        } else if (roomUsers.size > 0) {
+          io.to(room).emit('Room-Data', {room: room, players: roomIdMap.get(room)});
+        }
       }
-      console.log(roomIdMap);
 
+      io.emit('Online-users', { Online: onlineUsers });
+      io.emit('Get-rooms', { Rooms: Array.from(roomIdMap) });
     });
 
-    client.on('create', function (room, callback) {
-      console.log('create:', roomIdMap);
+    /*Create room*/
+    client.on('Create-room', function (room, callback) {
       if (roomIdMap.has(room)) {
-        callback('Room already existed.');
-      }
-      else {
+        callback({
+          success: false,
+          message: 'Room already existed. Please choose different id.'
+        });
+      } else {
         client.join(room);
         roomIdMap.set(room, new Array(username));
-        let rooms = Array.from(roomIdMap.keys());
-        io.emit('get rooms', { Rooms: rooms });
+        io.emit('Get-rooms', {Rooms: Array.from(roomIdMap)});
+
+        callback({
+          success: true
+        });
       }
     });
 
-    client.on('join', function (room, callback) {
-      if (roomIdMap.has(room)) {
+    /*Join room*/
+    client.on('Join-room', function (room, callback) {
+      if (roomIdMap.has(room) &&
+          !roomIdMap.get(room).find(user => user === username) &&
+          roomIdMap.get(room).length < 2) {
         client.join(room);
         roomIdMap.get(room).push(username);
-      }
-      else {
-        callback('Room does not exist.');
+        io.emit('Get-rooms', {Rooms: Array.from(roomIdMap)});
+        callback({
+          success: true
+        })
+      } else {
+        if (!roomIdMap.has(room)) {
+          callback({
+            success: false,
+            message: 'Room does not exist'
+          });
+        } else if (roomIdMap.get(room).find(user => user === username)) {
+          callback({
+            success: false,
+            message: 'You have already in this room.'
+          })
+        } else if (!(roomIdMap.get(room).length < 2)) {
+          callback({
+            success: false,
+            message: 'Room is full. Please choose different room or create new room.'
+          })
+        }
       }
     });
 
-    client.on('chat', function (message) {
-      let room;
+    client.on('In-room', function(room) {
+      io.to(room).emit('Room-Data', { room: room, players: roomIdMap.get(room)});
+    })
+
+     /*Chat*/
+    client.on('Send-Message', function (message) {
+      let room = null
       for (let [key, value] of roomIdMap.entries()) {
         value.forEach(valueItem => {
           if (valueItem === username)
             room = key;
         });
       }
-      //console.log(room);
       let timestamp = (new Date()).toISOString();
-      client.to(room).emit('chat', {
+      io.to(room).emit('Get-Message', {
         username: username,
         message: message,
         time: timestamp
       });
     });
 
-
-    client.on('step', function (step) {
-      let room;
+    /*Play move*/
+    client.on('Play-Move', function (data) {
+      let room = null
       for (let [key, value] of roomIdMap.entries()) {
         value.forEach(valueItem => {
           if (valueItem === username)
             room = key;
         });
       }
-      console.log(room);
+
       let timestamp = (new Date()).toISOString();
-      client.to(room).emit('step', {
+      io.to(room).emit('Get-Move', {
         username: username,
-        step: step,
+        move: data.move,
+        letter: data.letter,
         time: timestamp
       });
     });
 
+    /*Undo move*/
+    client.on('Undo-Move', index => {
+      let room = null
+      for (let [key, value] of roomIdMap.entries()) {
+        value.forEach(valueItem => {
+          if (valueItem === username)
+            room = key;
+        });
+      }
+      io.to(room).emit('Undo-Move', index)
+    })
   } else
     io.emit('Online-users', { Online: Array.from(userSocketIdMap.keys()) });
-})
-
+  })
 
 server.listen(port, () => {
   console.log(`Our server is running on port ${port}`);
 });
+
 
 module.exports.app = server;
 
