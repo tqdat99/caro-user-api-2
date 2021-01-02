@@ -92,7 +92,7 @@ module.exports.signIn = function (req, res) {
           // if user is found and password is right create a token
           var token = jwt.sign(user.toJSON(), jwt_secret_or_key);
           // return the information including token as JSON
-          res.json({ success: true, token: 'JWT ' + token });
+          res.json({ success: true, token: 'JWT ' + token, userId: user._id, username: user.username});
         } else {
           res.status(401).send({ success: false, msg: 'Authentication failed. Wrong password.' });
         }
@@ -139,3 +139,4 @@ module.exports.getUserByUsername = function (req, res) {
       });
     });
 }
+
