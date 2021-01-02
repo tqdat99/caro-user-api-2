@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 // set up mongoose
 const mongo_path = process.env.MONGO_PATH || "mongodb+srv://tqdat99:datdarkus1305@tqdat99.imlem.mongodb.net/caro?retryWrites=true&w=majority";
-mongoose.connect(mongo_path, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(mongo_path, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     .then(() => {
         console.log('Database connected');
     })
