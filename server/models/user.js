@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
 mongoose.Promise = global.Promise;
 
@@ -14,6 +14,10 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  game_ids: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Game'
+  }],
 });
 
 userSchema.pre('save', function (next) {
