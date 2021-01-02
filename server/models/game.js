@@ -4,23 +4,37 @@ var Schema = mongoose.Schema;
 mongoose.Promise = global.Promise;
 
 const gameSchema = new Schema({
-  _id: Schema.Types.ObjectId,
-  boardId: {
+  room: {
     type: String,
-    required: true,
+    required: true
   },
-  guest: {
+  playedDate: {
     type: String,
-    required: true,
+    required: true
   },
-  steps: {
-    type: String,
-    required: true,
+  turn: {
+    move_x: {
+      type: String,
+      required: true
+    },
+    move_o: {
+      type: String,
+      required: true
+    }
   },
-  result: {
-    type: Number,
-    required: true,
-  },
+  history: [{
+    type: Array,
+  }],
+  messages: [{
+    sender: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      required: true
+    }
+  }]
 });
 
 module.exports = mongoose.model('Game', gameSchema);
