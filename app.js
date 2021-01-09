@@ -4,8 +4,9 @@ const logger = require('morgan');
 const userRoutes = require('./server/routes/user');
 const cors = require('cors')
 const passport = require('passport');
+
 require('./server/db/db');
-const {addGame} = require("./server/controllers/game");
+const { addGame } = require("./server/controllers/game");
 
 // set up dependencies
 const app = express();
@@ -48,19 +49,19 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   let winState = (boardSize < 5) ? 3 : 5
 
   // check row
-  let line=[step[0] * boardSize + step[1]]
+  let line = [step[0] * boardSize + step[1]]
   let countLeft = 0;
   let countRight = 0;
   for (let i = column - 1; i >= 0; i--) {
     if (matrix[row][i] === playerMove) {
       countLeft++;
-      line.push(row*boardSize+i)
+      line.push(row * boardSize + i)
     } else break;
   }
   for (let i = column + 1; i < boardSize; i++) {
     if (matrix[row][i] === playerMove) {
       countRight++;
-      line.push(row*boardSize+i)
+      line.push(row * boardSize + i)
     } else break;
   }
   if (countLeft + countRight >= winState - 1)
@@ -70,19 +71,19 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
     };
 
   //check column
-  line=[step[0] * boardSize + step[1]]
+  line = [step[0] * boardSize + step[1]]
   countLeft = 0;
   countRight = 0;
   for (let i = row - 1; i >= 0; i--) {
     if (matrix[i][column] === playerMove) {
       countLeft++;
-      line.push(i*boardSize+column)
+      line.push(i * boardSize + column)
     } else break;
   }
   for (let i = row + 1; i < boardSize; i++) {
     if (matrix[i][column] === playerMove) {
       countRight++;
-      line.push(i*boardSize+column)
+      line.push(i * boardSize + column)
     } else break;
   }
   if (countLeft + countRight >= winState - 1)
@@ -92,7 +93,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
     };
 
   //check diag
-  line=[step[0] * boardSize + step[1]]
+  line = [step[0] * boardSize + step[1]]
   countLeft = 0;
   countRight = 0;
   let i = row - 1;
@@ -100,7 +101,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   while (i >= 0 && j >= 0) {
     if (matrix[i][j] === playerMove) {
       countLeft++;
-      line.push(i*boardSize+j)
+      line.push(i * boardSize + j)
     } else break;
     i--;
     j--;
@@ -110,7 +111,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   while (i < boardSize && j < boardSize) {
     if (matrix[i][j] === playerMove) {
       countRight++;
-      line.push(i*boardSize+j)
+      line.push(i * boardSize + j)
     } else break;
     i++;
     j++;
@@ -122,7 +123,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
     };
 
   //check anti diag
-  line=[step[0] * boardSize + step[1]]
+  line = [step[0] * boardSize + step[1]]
   countLeft = 0;
   countRight = 0;
   i = row + 1;
@@ -130,7 +131,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   while (i < boardSize && j >= 0) {
     if (matrix[i][j] === playerMove) {
       countLeft++;
-      line.push(i*boardSize+j)
+      line.push(i * boardSize + j)
     } else break;
     i++;
     j--;
@@ -140,7 +141,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   while (i >= 0 && j < boardSize) {
     if (matrix[i][j] === playerMove) {
       countRight++;
-      line.push(i*boardSize+j)
+      line.push(i * boardSize + j)
     } else break;
     i--;
     j++;
@@ -153,7 +154,7 @@ const calculateWinner = function (squares, step, boardSize, playerMove) {
   return null
 }
 
-const checkBoardFull = function(squares) {
+const checkBoardFull = function (squares) {
   for (let i = 0; i < squares.length; i++) {
     if (squares[i] === null)
       return false
@@ -189,12 +190,12 @@ io.on('connection', (socket) => {
   /*ON FIND RANDOM ROOM*/
   socket.on('Find-Random-Room', (data, callback) => {
     console.log('SOMEONE FIND RANDOM ROOM: ', data)
-      const availableRoom = Array.from(roomsMap.values()).find(room => room.roomType === 'random' && room.players.length < 2)
-      if (availableRoom) {
-        //CREATE
-      } else {
-        //JOIN
-      }
+    const availableRoom = Array.from(roomsMap.values()).find(room => room.roomType === 'random' && room.players.length < 2)
+    if (availableRoom) {
+      //CREATE
+    } else {
+      //JOIN
+    }
   })
 
   /*ON CREATE ROOM*/
@@ -223,7 +224,7 @@ io.on('connection', (socket) => {
         messages: [
           {
             sender: 'admin',
-            message:`${user} has joined room.`
+            message: `${user} has joined room.`
           }
         ]
       }
@@ -244,7 +245,7 @@ io.on('connection', (socket) => {
     let room = roomsMap.get(data.roomId)
     room.currentGame.messages.push({
       sender: 'admin',
-      message:`${user} has joined room.`
+      message: `${user} has joined room.`
     })
     if (data.join_as === 'player') {
       room.roomInfo.players.push(user)
@@ -287,9 +288,9 @@ io.on('connection', (socket) => {
       room.roomInfo.players = []
       room.roomInfo.watchers = []
       room.currentGame.isXTurn = true
-      room.currentGame.turn = {move_x: null, move_o: null}
+      room.currentGame.turn = { move_x: null, move_o: null }
       room.currentGame.history = [Array(BOARD_SIZE * BOARD_SIZE).fill(null)]
-      room.currentGame.messages=[]
+      room.currentGame.messages = []
 
       // broadcast
       io.to(data.roomId).emit('Game-State', {
@@ -304,9 +305,9 @@ io.on('connection', (socket) => {
       room.roomInfo.players = []
       room.roomInfo.watchers = []
       room.currentGame.isXTurn = true
-      room.currentGame.turn = {move_x: null, move_o: null}
+      room.currentGame.turn = { move_x: null, move_o: null }
       room.currentGame.history = [Array(BOARD_SIZE * BOARD_SIZE).fill(null)]
-      room.currentGame.messages=[]
+      room.currentGame.messages = []
 
       // broadcast
       io.to(data.roomId).emit('Game-State', {
@@ -336,7 +337,7 @@ io.on('connection', (socket) => {
     }
     room.currentGame.messages.push({
       sender: 'admin',
-      message:`${user} has joined room.`
+      message: `${user} has joined room.`
     })
 
     // broadcast
@@ -360,7 +361,7 @@ io.on('connection', (socket) => {
     })
 
     // broadcast
-    io.to(data.roomId).emit('Message',{
+    io.to(data.roomId).emit('Message', {
       sender: user,
       message: data.message
     })
@@ -377,9 +378,9 @@ io.on('connection', (socket) => {
     room.roomInfo.players = []
     room.roomInfo.watchers = []
     room.currentGame.isXTurn = true
-    room.currentGame.turn = {move_x: null, move_o: null}
+    room.currentGame.turn = { move_x: null, move_o: null }
     room.currentGame.history = [Array(BOARD_SIZE * BOARD_SIZE).fill(null)]
-    room.currentGame.messages=[]
+    room.currentGame.messages = []
 
     // broadcast
     io.to(data.roomId).emit('Game-State', {
@@ -400,9 +401,9 @@ io.on('connection', (socket) => {
     room.roomInfo.players = []
     room.roomInfo.watchers = []
     room.currentGame.isXTurn = true
-    room.currentGame.turn = {move_x: null, move_o: null}
+    room.currentGame.turn = { move_x: null, move_o: null }
     room.currentGame.history = [Array(BOARD_SIZE * BOARD_SIZE).fill(null)]
-    room.currentGame.messages=[]
+    room.currentGame.messages = []
 
     // broadcast
     io.to(data.roomId).emit('Game-State', {

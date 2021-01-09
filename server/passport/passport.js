@@ -1,7 +1,7 @@
 var JwtStrategy = require('passport-jwt').Strategy,
     ExtractJwt = require('passport-jwt').ExtractJwt,
-    jwt_scheme = 'jwt' || process.env.JWT_SCHEME,
-    jwt_secret_or_key = 'WEBNC17' || process.env.JWT_SECRET_OR_KEY;
+    jwt_scheme = process.env.JWT_SCHEME || 'jwt',
+    jwt_secret_or_key = process.env.JWT_SECRET_OR_KE || 'WEBNC17';
 
 // load up the user model
 var User = require('../models/user');
