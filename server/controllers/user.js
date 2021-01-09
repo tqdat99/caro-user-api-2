@@ -12,6 +12,7 @@ const Token = require('../models/token');
 module.exports.getUsers = function (req, res) {
   return User.find()
     .select('username')
+    .sort({ cups: 'descending' })
     .then((Users) => {
       return res.status(200).json({
         success: true,
@@ -429,6 +430,27 @@ module.exports.addEmailByUsername = function (req, res) {
             error: err.message,
           });
         });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+}
+
+// Get leaderboards
+module.exports.getLeaderboard = function (req, res) {
+  return User.find()
+    .select('username cups')
+    .sort({ cups: 'descending' })
+    .then((Users) => {
+      return res.status(200).json({
+        success: true,
+        message: 'Users',
+        Users: Users,
+      });
     })
     .catch((err) => {
       res.status(500).json({

@@ -55,21 +55,8 @@ module.exports = function (passport) {
                         // if a user is found, log them in
                         return done(null, user);
                     } else {
-                        // if the user isnt in our database, create a new user
-                        var newUser = new User();
 
-                        // set all of the relevant information
-                        newUser.google.id = profile.id;
-                        newUser.google.token = token;
-                        newUser.google.name = profile.displayName;
-                        newUser.google.email = profile.emails[0].value; // pull the first email
-
-                        // save the user
-                        newUser.save(function (err) {
-                            if (err)
-                                throw err;
-                            return done(null, newUser);
-                        });
+                        return done(null, newUser);
                     }
                 });
             });

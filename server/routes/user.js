@@ -4,7 +4,7 @@ require('../passport/passport')(passport);
 require('../passport/passport-facebook')(passport);
 require('../passport/passport-google')(passport);
 
-const { getUsers, getUserByUsername, signUp, signIn, updateUserByUsername, updatePasswordByUsername, requestVerification, verify, updateEmailByUsername, addEmailByUsername, checkUsernameAndEmail } = require('../controllers/user');
+const { getUsers, getUserByUsername, signUp, signIn, updateUserByUsername, updatePasswordByUsername, requestVerification, verify, updateEmailByUsername, addEmailByUsername, checkUsernameAndEmail, getLeaderboard } = require('../controllers/user');
 const { createBoard } = require('../controllers/board');
 const facebookAppToken = process.env.FACEBOOK_APP || '4166090010091919|5558yQbRtuqtUNI8uJfcSkqC3ig';
 const googleApp = process.env.GOOGLE_CONSUMER_KEY || '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com'
@@ -55,6 +55,7 @@ userRoutes.get('/test', getUsers);
 userRoutes.get('/', isLoggedIn, getUsers);
 userRoutes.post('/signup', signUp);
 userRoutes.post('/signin', signIn);
+userRoutes.get('/leaderboard', isLoggedIn, getLeaderboard);
 userRoutes.get('/check', checkUsernameAndEmail);
 userRoutes.get('/user', isLoggedIn, getUserByUsername);
 userRoutes.put('/update', isLoggedIn, updateUserByUsername);
