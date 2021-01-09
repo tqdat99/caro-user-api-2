@@ -78,22 +78,18 @@ module.exports.addGame = function(req, res) {
     messages: req.game.messages
   })
   try {
-    // const savedGame = await newGame.save()
-    // const updatedUser = await User.findOneAndUpdate({username: req.turn.move_x}, {$push: {game_ids: savedGame._id}})
-    // res.json(savedGame)
     newGame.save()
         .then((response) => {
           User.findOneAndUpdate({username: response.turn.move_x}, {$push: {game_ids: response._id}}, {new: true})
               .then((res) => {
-                console.log('HELOO', res)
+                  console.log('Database Update', res)
               })
           User.findOneAndUpdate({username: response.turn.move_o}, {$push: {game_ids: response._id}}, {new: true})
               .then((res) => {
-                console.log('HELOO', res)
+                  console.log('Database Update', res)
               })
         })
   } catch (err) {
-    // res.json({message: err})
     console.log(err)
   }
 }
