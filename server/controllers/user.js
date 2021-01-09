@@ -156,7 +156,7 @@ getToken = function (headers) {
 // Check user by username
 module.exports.getUserByUsername = function (req, res) {
   return User.find({ "username": req.query.username })
-    .select('username')
+    .select()
     .then((User) => {
       return res.status(200).json({
         success: true,
