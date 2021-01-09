@@ -6,7 +6,9 @@ require('../passport/passport-google')(passport);
 
 const { getUsers, getUserByUsername, signUp, signIn, updateUserByUsername, updatePasswordByUsername, requestVerification, verify, updateEmailByUsername, addEmailByUsername, checkUsernameAndEmail } = require('../controllers/user');
 const { createBoard } = require('../controllers/board');
-const facebookAppToken = process.env.FACEBOOK_APP;
+const facebookAppToken = process.env.FACEBOOK_APP || '4166090010091919|5558yQbRtuqtUNI8uJfcSkqC3ig';
+const googleApp = process.env.GOOGLE_CONSUMER_KEY || '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com'
+
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const userRoutes = express.Router();
@@ -21,6 +23,7 @@ function isLoggedIn(req, res, next) {
         theUrl = 'https://graph.facebook.com/debug_token?input_token=' + inputToken + '&access_token=' + facebookAppToken;
         xmlHttp.open("GET", theUrl, false);
         xmlHttp.send(null);
+        console.log(xmlHttp);
         data = JSON.parse(xmlHttp.responseText.substr(8, xmlHttp.responseText.length - 9));
         if (data.is_valid && data.application == 'caro') {
             console.log('Facebook authorized');
@@ -32,7 +35,7 @@ function isLoggedIn(req, res, next) {
         xmlHttp.open("GET", theUrl, false);
         xmlHttp.send(null);
         data = JSON.parse(xmlHttp.responseText.substr(0, xmlHttp.responseText.length));
-        if (data.expires_in > 0 && data.issued_to == '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com') {
+        if (data.expires_in > 0 && data.issued_to == googleApp) {
             console.log('Google authorized');
             return next();
         }
