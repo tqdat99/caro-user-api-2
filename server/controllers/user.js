@@ -70,15 +70,19 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
       if (User.length > 0) {
         if (User[0].username == req.body.username && User[0].email == req.body.email)
           res.status(200).json({
+            status: "Old user",
             message: 'This user already exists.',
+            User: User[0],
           });
         else
           res.status(200).json({
+            status: "Invalid",
             message: 'Invalid username or email.',
           });
       }
       else
         res.status(200).json({
+          status: "New user",
           message: 'No user with this email exists.',
         });
     })
@@ -433,6 +437,4 @@ module.exports.addEmailByUsername = function (req, res) {
         error: err.message,
       });
     });
-
-
 }
