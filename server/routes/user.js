@@ -21,6 +21,8 @@ function isLoggedIn(req, res, next) {
 
         //Authorize facebook token
         theUrl = 'https://graph.facebook.com/debug_token?input_token=' + inputToken + '&access_token=' + facebookAppToken;
+        console.log(theUrl);
+
         xmlHttp.open("GET", theUrl, false);
         xmlHttp.send(null);
         console.log(xmlHttp);
@@ -32,6 +34,8 @@ function isLoggedIn(req, res, next) {
 
         //Authorize google token
         theUrl = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + inputToken;
+        console.log(theUrl);
+
         xmlHttp.open("GET", theUrl, false);
         xmlHttp.send(null);
         data = JSON.parse(xmlHttp.responseText.substr(0, xmlHttp.responseText.length));
