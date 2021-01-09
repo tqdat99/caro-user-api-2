@@ -33,6 +33,26 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  createdAt: {
+    type: Date,
+    required: true,
+    default: Date.now(),
+  },
+  wins: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  cups: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  level: {
+    type: String,
+    required: true,
+    default: 'bronze',
+  }
 });
 
 userSchema.pre('save', function (next) {
