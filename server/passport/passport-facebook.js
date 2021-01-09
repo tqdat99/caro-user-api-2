@@ -3,6 +3,7 @@ var User = require('../models/user');
 var clientID = process.env.FACEBOOK_CLIENTID || '4166090010091919',
     clientSecret = process.env.FACEBOOK_SECRET || 'def0cfcc2eb7061507ef9c0e1ada2631',
     callbackURL = process.env.FACEBOOK_CALLBACK || 'http://localhost:5034/users/callback';
+
 const mongoose = require('mongoose');
 
 module.exports = function (passport) {

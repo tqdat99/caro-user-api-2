@@ -4,7 +4,7 @@ const logger = require('morgan');
 const userRoutes = require('./server/routes/user');
 const cors = require('cors')
 const passport = require('passport');
-
+require('dotenv').config()
 require('./server/db/db');
 const { addGame } = require("./server/controllers/game");
 
@@ -16,7 +16,7 @@ app.use(logger('dev'));
 app.use(cors());
 app.use(passport.initialize());
 // set up port
-const port = process.env.PORT || 5034;
+const port = process.env.PORT;
 // set up route
 app.use('/users/', userRoutes);
 app.get('/', (req, res) => {

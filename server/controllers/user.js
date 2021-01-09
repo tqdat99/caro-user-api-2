@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 var passport = require('passport');
 require('../passport/passport')(passport);
 var jwt = require('jsonwebtoken');
-jwt_secret_or_key = 'WEBNC17' || process.env.JWT_SECRET_OR_KEY;
+jwt_secret_or_key = process.env.JWT_SECRET_OR_KEY;
 var crypto = require('crypto');
 var nodemailer = require('nodemailer');
 const User = require('../models/user');
@@ -61,6 +61,35 @@ module.exports.signUp = async function (req, res) {
       });
   };
 };
+
+module.exports.checkUsernameAndEmail = async function (req, res) {
+  return User.find({ $or: [{ 'username': req.body.username }, { 'email': req.body.email }] })
+    .select()
+    .then((User) => {
+      console.log(User)
+      if (User.length > 0) {
+        if (User[0].username == req.body.username && User[0].email == req.body.email)
+          res.status(200).json({
+            message: 'This user already exists.',
+          });
+        else
+          res.status(200).json({
+            message: 'Invalid username or email.',
+          });
+      }
+      else
+        res.status(200).json({
+          message: 'No user with this email exists.',
+        });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+}
 
 // Get user by username
 checkUsername = function (username) {
@@ -266,12 +295,12 @@ module.exports.requestVerification = async function (req, res) {
           error: err.message,
         });
       }
-      // Send the email
+
       var transporter = nodemailer.createTransport({
         service: 'Gmail',
         auth: {
-          user: process.env.MAILER_USERNAME || 'biodarkus1305@gmail.com',
-          pass: process.env.MAILER_PASSWORD || 'datdarkus1305'
+          user: process.env.MAILER_USERNAME,
+          pass: process.env.MAILER_PASSWORD
         }
       });
       var mailOptions = {
@@ -362,4 +391,48 @@ getEmailByUsername = function (username) {
         error: err.message,
       });
     });
+}
+
+module.exports.addEmailByUsername = function (req, res) {
+  return User.find({ username: req.body.username })
+    .select()
+    .then((user) => {
+      console.log(user);
+      if (!user) return res.status(401).json({ msg: 'Unable to find a user.' });
+      if (!user.email) return res.status(401).json({ msg: 'User already has an email.' });
+      return User.findOneAndUpdate(
+        { username: req.body.username },
+        {
+          $set: {
+            email: req.body.email,
+          }
+        },
+        {
+          upsert: false
+        }
+      )
+        .then((User) => {
+          return res.status(200).json({
+            success: true,
+            message: 'Email added.',
+            User: User,
+          });
+        })
+        .catch((err) => {
+          res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again.',
+            error: err.message,
+          });
+        });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+
+
 }

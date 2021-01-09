@@ -35,9 +35,9 @@ module.exports = function (passport) {
     // GOOGLE ==================================================================
     // =========================================================================
     passport.use(new GoogleStrategy({
-        clientID: '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com',
-        clientSecret: 'oIcskPni2-XLHmIP10v9skp-',
-        callbackURL: "http://localhost:5034/users/callback-google"
+        clientID: process.env.GOOGLE_CONSUMER_KEY || '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com',
+        clientSecret: process.env.GOOGLE_CONSUMER_SECRET || 'oIcskPni2-XLHmIP10v9skp-',
+        callbackURL: process.env.GOOGLE_CALLBACK || "http://localhost:5034/users/callback-google"
     },
         function (token, refreshToken, profile, done) {
             console.log(token);
