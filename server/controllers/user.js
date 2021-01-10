@@ -30,9 +30,8 @@ module.exports.getUsers = function (req, res) {
 }
 
 module.exports.signUp = async function (req, res) {
-  if (!req.body.username || !req.body.password) {
-    res.json({ success: false, msg: 'Please pass username and password.' });
-  } else {
+  if ((req.body.username && (req.body.password || req.body.email))) {
+
     const user = new User({
       _id: mongoose.Types.ObjectId(),
       username: req.body.username,
@@ -60,7 +59,9 @@ module.exports.signUp = async function (req, res) {
           error: error.message,
         });
       });
-  };
+  } else {
+    res.json({ success: false, msg: 'Please pass username and password or username and email.' });
+  }
 };
 
 module.exports.checkUsernameAndEmail = async function (req, res) {
