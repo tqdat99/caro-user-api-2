@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 var passport = require('passport');
 require('../passport/passport')(passport);
 var jwt = require('jsonwebtoken');
-jwt_secret_or_key = process.env.JWT_SECRET_OR_KEY;
+jwt_secret_or_key = process.env.JWT_SECRET_OR_KEY || 'WEBNC17';
 var crypto = require('crypto');
 var nodemailer = require('nodemailer');
 const User = require('../models/user');
