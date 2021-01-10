@@ -126,7 +126,7 @@ module.exports.signIn = function (req, res) {
       user.comparePassword(req.body.password, function (err, isMatch) {
         if (isMatch && !err) {
           var token = jwt.sign(user.toJSON(), jwt_secret_or_key);
-          res.json({ success: true, token: 'JWT ' + token, userId: user._id, username: user.username });
+          res.json({ success: true, token: 'JWT ' + token, User: user });
         } else {
           res.status(401).send({ success: false, msg: 'Authentication failed. Wrong password.' });
         }
@@ -304,12 +304,12 @@ module.exports.requestVerification = async function (req, res) {
       var transporter = nodemailer.createTransport({
         service: 'Gmail',
         auth: {
-          user: process.env.MAILER_USERNAME,
-          pass: process.env.MAILER_PASSWORD
+          user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
+          pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
         }
       });
       var mailOptions = {
-        from: 'biodarkus1305@gmail.com',
+        from: 'caro.webnc@gmail.com',
         to: email,
         subject: 'Account Verification',
         text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
