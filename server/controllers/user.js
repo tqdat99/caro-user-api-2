@@ -11,22 +11,22 @@ const Token = require('../models/token');
 // Get users
 module.exports.getUsers = function (req, res) {
   return User.find()
-    .select(['displayName', 'cups'])
-    .sort({ cups: 'descending' })
-    .then((Users) => {
-      return res.status(200).json({
-        success: true,
-        message: 'Users',
-        users: Users,
+      .select(['displayName', 'cups'])
+      .sort({ cups: 'descending' })
+      .then((Users) => {
+        return res.status(200).json({
+          success: true,
+          message: 'Users',
+          users: Users,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
-      });
-    });
 }
 
 module.exports.signUp = async function (req, res) {
@@ -46,21 +46,21 @@ module.exports.signUp = async function (req, res) {
       });
     }
     return user
-      .save()
-      .then((newUser) => {
-        return res.status(201).json({
-          success: true,
-          message: 'User created successfully',
-          user: newUser
+        .save()
+        .then((newUser) => {
+          return res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            user: newUser
+          });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again.',
+            error: error.message,
+          });
         });
-      })
-      .catch((error) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: error.message,
-        });
-      });
   } else {
     res.json({success: false, msg: 'Please pass username and password/email.'});
   }
@@ -175,54 +175,54 @@ module.exports.resetPassword = function (req, res, next) {
 
 module.exports.checkUsernameAndEmail = async function (req, res) {
   return User.find({ $or: [{ 'username': req.body.username }, { 'email': req.body.email }] })
-    .select()
-    .then((User) => {
-      console.log(User)
-      if (User.length > 0) {
-        if (User[0].username === req.body.username && User[0].email === req.body.email)
-          res.status(200).json({
-            status: "old_user",
-            message: 'This user already exists.',
-            user: User[0],
-          });
+      .select()
+      .then((User) => {
+        console.log(User)
+        if (User.length > 0) {
+          if (User[0].username === req.body.username && User[0].email === req.body.email)
+            res.status(200).json({
+              status: "old_user",
+              message: 'This user already exists.',
+              user: User[0],
+            });
+          else
+            res.status(200).json({
+              status: "invalid",
+              message: 'Invalid username or email.',
+            });
+        }
         else
           res.status(200).json({
-            status: "invalid",
-            message: 'Invalid username or email.',
+            status: "new_user",
+            message: 'No user with this email exists.',
           });
-      }
-      else
-        res.status(200).json({
-          status: "new_user",
-          message: 'No user with this email exists.',
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
         });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
       });
-    });
 }
 
 // Get user by username
 checkUsername = function (username) {
   return User.find({ "username": username })
-    .select('username')
-    .then((User) => {
-      if (User.length > 0) {
-        return true;
-      }
-      return false;
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
+      .select('username')
+      .then((User) => {
+        if (User.length > 0) {
+          return true;
+        }
+        return false;
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    });
 }
 
 module.exports.signIn = function (req, res) {
@@ -267,49 +267,49 @@ getToken = function (headers) {
 // Check user by username
 module.exports.getUserByUsername = function (req, res) {
   return User.find({ "username": req.query.username })
-    .select()
-    .then((User) => {
-      return res.status(200).json({
-        success: true,
-        message: 'User',
-        User: User,
+      .select()
+      .then((User) => {
+        return res.status(200).json({
+          success: true,
+          message: 'User',
+          User: User,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
-      });
-    });
 }
 
 module.exports.updateUserByUsername = function (req, res) {
   return User.findOneAndUpdate(
-    { username: req.body.username },
-    {
-      $set: {
-        avatar: req.body.avatar,
+      { username: req.body.username },
+      {
+        $set: {
+          avatar: req.body.avatar,
+        }
+      },
+      {
+        upsert: false
       }
-    },
-    {
-      upsert: false
-    }
   )
-    .then((User) => {
-      return res.status(200).json({
-        success: true,
-        message: 'User',
-        User: User,
+      .then((User) => {
+        return res.status(200).json({
+          success: true,
+          message: 'User',
+          User: User,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
-      });
-    });
 }
 
 module.exports.updatePasswordByUsername = function (req, res) {
@@ -341,28 +341,28 @@ module.exports.updatePasswordByUsername = function (req, res) {
             //Update password
             if (newHashedPassword && !errHash) {
               return User.findOneAndUpdate(
-                { username: req.body.username },
-                {
-                  $set: {
-                    password: newHashedPassword,
+                  { username: req.body.username },
+                  {
+                    $set: {
+                      password: newHashedPassword,
+                    }
+                  },
+                  {
+                    upsert: false
                   }
-                },
-                {
-                  upsert: false
-                }
               )
-                .then((User) => {
-                  return res.status(200).json({
-                    success: true,
-                    message: 'Password successfully updated.',
+                  .then((User) => {
+                    return res.status(200).json({
+                      success: true,
+                      message: 'Password successfully updated.',
+                    });
+                  })
+                  .catch((err) => {
+                    return res.status(500).json({
+                      success: false,
+                      message: 'Server error. Please try again.',
+                    });
                   });
-                })
-                .catch((err) => {
-                  return res.status(500).json({
-                    success: false,
-                    message: 'Server error. Please try again.',
-                  });
-                });
             }
             else return res.status(500).json({
               success: false,
@@ -423,8 +423,8 @@ module.exports.requestVerification = async function (req, res) {
         to: email,
         subject: 'Account Verification',
         text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
-          req.headers.host + '\/verification\/' +
-          token.token + '.\n'
+            req.headers.host + '\/verification\/' +
+            token.token + '.\n'
       };
       transporter.sendMail(mailOptions, function (err) {
         if (err) {
@@ -464,30 +464,30 @@ module.exports.verify = function (req, res, next) {
 
       // Verify and save the user
       User.findOneAndUpdate(
-        { username: token.username },
-        {
-          $set: {
-            verified: 'true',
+          { username: token.username },
+          {
+            $set: {
+              verified: 'true',
+            }
+          },
+          {
+            upsert: false
           }
-        },
-        {
-          upsert: false
-        }
       )
-        .then((User) => {
-          console.log(User)
-          return res.status(200).json({
-            success: true,
-            message: 'Email verified.',
+          .then((User) => {
+            console.log(User)
+            return res.status(200).json({
+              success: true,
+              message: 'Email verified.',
+            });
+          })
+          .catch((err) => {
+            res.status(500).json({
+              success: false,
+              message: 'Server error. Please try again.',
+              error: err.message,
+            });
           });
-        })
-        .catch((err) => {
-          res.status(500).json({
-            success: false,
-            message: 'Server error. Please try again.',
-            error: err.message,
-          });
-        });
     });
   });
 };
@@ -495,80 +495,80 @@ module.exports.verify = function (req, res, next) {
 // Get user by username
 getEmailByUsername = function (username) {
   return User.find({ "username": username })
-    .select('email')
-    .then((result) => {
-      return result[0].email;
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
+      .select('email')
+      .then((result) => {
+        return result[0].email;
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    });
 }
 
 module.exports.addEmailByUsername = function (req, res) {
   return User.find({ username: req.body.username })
-    .select()
-    .then((user) => {
-      console.log(user);
-      if (!user) return res.status(401).json({ msg: 'Unable to find a user.' });
-      if (!user.email) return res.status(401).json({ msg: 'User already has an email.' });
-      return User.findOneAndUpdate(
-        { username: req.body.username },
-        {
-          $set: {
-            email: req.body.email,
-          }
-        },
-        {
-          upsert: false
-        }
-      )
-        .then((User) => {
-          return res.status(200).json({
-            success: true,
-            message: 'Email added.',
-            User: User,
-          });
-        })
-        .catch((err) => {
-          res.status(500).json({
-            success: false,
-            message: 'Server error. Please try again.',
-            error: err.message,
-          });
+      .select()
+      .then((user) => {
+        console.log(user);
+        if (!user) return res.status(401).json({ msg: 'Unable to find a user.' });
+        if (!user.email) return res.status(401).json({ msg: 'User already has an email.' });
+        return User.findOneAndUpdate(
+            { username: req.body.username },
+            {
+              $set: {
+                email: req.body.email,
+              }
+            },
+            {
+              upsert: false
+            }
+        )
+            .then((User) => {
+              return res.status(200).json({
+                success: true,
+                message: 'Email added.',
+                User: User,
+              });
+            })
+            .catch((err) => {
+              res.status(500).json({
+                success: false,
+                message: 'Server error. Please try again.',
+                error: err.message,
+              });
+            });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
         });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
       });
-    });
 }
 
 // Get leaderboards
 module.exports.getLeaderboard = function (req, res) {
   return User.find()
-    .select('displayName cups')
-    .sort({ cups: 'descending' })
-    .then((Users) => {
-      return res.status(200).json({
-        success: true,
-        message: 'Users',
-        users: Users,
+      .select('displayName cups')
+      .sort({ cups: 'descending' })
+      .then((Users) => {
+        return res.status(200).json({
+          success: true,
+          message: 'Users',
+          users: Users,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
       });
-    })
-    .catch((err) => {
-      res.status(500).json({
-        success: false,
-        message: 'Server error. Please try again.',
-        error: err.message,
-      });
-    });
 }
 
 module.exports.getUserByDisplayName = function (req, res) {
