@@ -111,8 +111,8 @@ module.exports.requestPasswordReset = async function (req, res) {
         from: 'caro.webnc@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttp:\/\/' +
-          req.headers.host + '\/reset-password\/' +
+        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttp://' +
+          req.headers.host + '/users/reset-password/' +
           token.token + '.\n'
       };
       transporter.sendMail(mailOptions, function (err) {
@@ -455,8 +455,8 @@ module.exports.requestVerification = async function (req, res) {
           from: 'caro.webnc@gmail.com',
           to: email,
           subject: 'Account Verification',
-          text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
-            req.headers.host + '\/users\/verify?token=' +
+          text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp://' +
+            req.headers.host + '/users/verify?token=' +
             token.token + '.\n'
         };
         transporter.sendMail(mailOptions, function (err) {
