@@ -12,6 +12,10 @@ const gameSchema = new Schema({
     type: String,
     required: true
   },
+  winner: {
+    type: String,
+    required: true
+  },
   turn: {
     move_x: {
       type: String,
