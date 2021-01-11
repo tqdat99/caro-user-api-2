@@ -1,4 +1,6 @@
 const checkResult = require("./checkResult");
+const {updateUserAfterGame} = require("../controllers/user");
+const {getUserBeforeUpdate} = require("../controllers/user");
 const {addGame} = require("../controllers/game");
 const BOARD_SIZE = 15
 const usersMap = new Map()
@@ -28,9 +30,41 @@ module.exports = function (io, socket) {
     onJoinRoom(io, socket, user)
     onInvitePlayer(io, socket, user)
     onReplyInvite(io, socket, user)
-
 }
 
+const updateUserDbService = (winnerName, loserName) => {
+    getUserBeforeUpdate({
+        displayName: winnerName
+    }).then(response => {
+        const winner = response[0]
+        console.log('WINNER: ', winner)
+
+        let newLevel = winner.level
+        if (winner.cups >= 20) newLevel = 'silver'
+        else if (winner.cups >= 50) newLevel = 'gold'
+        else if (winner.cups >= 100) newLevel = 'diamond'
+        updateUserAfterGame({
+            displayName: winnerName,
+            cups: winner.cups + 1,
+            wins: winner.wins + 1,
+            level: newLevel
+        })
+    })
+
+    getUserBeforeUpdate({
+        displayName: loserName
+    }).then(response => {
+        const loser = response[0]
+        console.log('LOSER: ', loser)
+
+        updateUserAfterGame({
+            displayName: loserName,
+            cups: (loser.cups > 0) ? loser.cups - 1 : 0,
+            wins: loser.wins,
+            level: loser.level
+        })
+    })
+}
 
 const onDisconnection = (io, socket, user) => {
     socket.on('disconnect', () => {
@@ -47,27 +81,31 @@ const onDisconnection = (io, socket, user) => {
         } else {
             room = roomsMap.get(socket.room)
         }
-        //
         if (room) {
-            addGame({
-                room: room.name,
-                playedDate: new Date().toUTCString(),
-                game: room.game,
-                winner: 'No result'
-            })
-            room.players = []
-            room.game = {
-                turn: {},
-                history: [
-                    Array(BOARD_SIZE * BOARD_SIZE).fill(null)
-                ],
-                messages: []
+            if (room.players.length > 0) {
+                room.players = []
+                room.game = {
+                    turn: {},
+                    history: [
+                        Array(BOARD_SIZE * BOARD_SIZE).fill(null)
+                    ],
+                    messages: []
+                }
+                io.to(socket.room).emit('Game-Result', {
+                    line: [],
+                    message: `${user} has left game!`
+                })
+                addGame({
+                    room: room.name,
+                    playedDate: new Date().toUTCString(),
+                    game: room.game,
+                    winner: room.players.find(item => item !== user)
+                })
+                updateUserDbService(room.players.find(item => item !== user), user)
+            } else {
+                roomsMap.delete(room.id)
+                io.emit('Active-Rooms', Array.from(roomsMap.values()))
             }
-            //
-            io.to(socket.room).emit('Game-Result', {
-                line: [],
-                message: `${user} has left game!`
-            })
         }
     })
 }
@@ -98,6 +136,7 @@ const onFindRandomRoom = (io, socket, user) => {
             type: 'random',
             name: "Random room",
             password: "",
+            time: 2,
             game: {
                 turn: {
                     move_x: user
@@ -143,6 +182,8 @@ const onPlayMove = (io, socket, user) => {
                 game: room.game,
                 winner: result.status === 'draw' ? 'Draw' : user
             })
+            if (result.status !== 'draw')
+                updateUserDbService(user, room.players.find(item => item !== user))
             room.players = []
             room.game = {
                 turn: {},
@@ -195,13 +236,13 @@ const onSurrender = (io, socket, user) => {
         } else {
             room = roomsMap.get(socket.room)
         }
-        //
         addGame({
             room: room.name,
             playedDate: new Date().toUTCString(),
             game: room.game,
             winner: room.players.find(item => item !== user)
         })
+        updateUserDbService(room.players.find(item => item !== user), user)
         room.players = []
         room.game = {
             turn: {},
@@ -210,7 +251,6 @@ const onSurrender = (io, socket, user) => {
             ],
             messages: []
         }
-        //
         io.to(socket.room).emit('Game-Result', {
             line: [],
             message: `${user} has surrendered!`
@@ -227,13 +267,13 @@ const onTimeOut = (io, socket, user) => {
         } else {
             room = roomsMap.get(socket.room)
         }
-        //
         addGame({
             room: room.name,
             playedDate: new Date().toUTCString(),
             game: room.game,
             winner: room.players.find(item => item !== user)
         })
+        updateUserDbService(room.players.find(item => item !== user), user)
         room.players = []
         room.game = {
             turn: {},
@@ -242,7 +282,6 @@ const onTimeOut = (io, socket, user) => {
             ],
             messages: []
         }
-        //
         io.to(socket.room).emit('Game-Result', {
             line: [],
             message: `${user} is time out!`
@@ -283,6 +322,7 @@ const onCreateRoom = (io, socket, user) => {
             type: data.type,
             name: data.name,
             password: data.password,
+            time: data.time,
             players: [user],
             game: {
                 turn: {
@@ -336,6 +376,7 @@ const onInvitePlayer = (io, socket, user) => {
             type: 'buddy',
             name: 'Buddy room',
             password: '',
+            time: 2,
             players: [user],
             game: {
                 turn: {
