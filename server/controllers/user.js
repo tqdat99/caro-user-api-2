@@ -30,8 +30,7 @@ module.exports.getUsers = function (req, res) {
 }
 
 module.exports.signUp = async function (req, res) {
-  console.log('req.body: ', req.body)
-  if (req.body.username && (req.body.password || req.body.email)) {
+  if (req.body.username && req.body.password && req.body.email) {
     const user = new User({
       _id: mongoose.Types.ObjectId(),
       username: req.body.username,
@@ -39,6 +38,14 @@ module.exports.signUp = async function (req, res) {
       email: req.body.email,
       displayName: req.body.displayName
     });
+
+    if (await checkEmail(user.email)) {
+      return res.status(201).json({
+        success: false,
+        message: 'Email already existed.',
+      });
+    }
+
     if (await checkUsername(user.username)) {
       return res.status(201).json({
         success: false,
@@ -210,6 +217,24 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
 checkUsername = function (username) {
   return User.find({ "username": username })
       .select('username')
+      .then((User) => {
+        if (User.length > 0) {
+          return true;
+        }
+        return false;
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      });
+}
+
+checkEmail = function (email) {
+  return User.find({ "email": email })
+      .select('email')
       .then((User) => {
         if (User.length > 0) {
           return true;
@@ -434,7 +459,9 @@ module.exports.requestVerification = async function (req, res) {
             error: err.message,
           });
         }
-        res.status(200).json('A verification email has been sent to ' + email + '.');
+        res.status(200).json({
+          message: 'A verification email has been sent to ' + email + '.'
+        });
       });
     });
   }
