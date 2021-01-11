@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 var passport = require('passport');
 require('../passport/passport')(passport);
 var jwt = require('jsonwebtoken');
-jwt_secret_or_key = process.env.JWT_SECRET_OR_KEY || 'WEBNC17';
+var jwt_secret_or_key = process.env.JWT_SECRET_OR_KEY || 'WEBNC17';
 var crypto = require('crypto');
 var nodemailer = require('nodemailer');
 const User = require('../models/user');
@@ -11,13 +11,13 @@ const Token = require('../models/token');
 // Get users
 module.exports.getUsers = function (req, res) {
   return User.find()
-    .select('username')
+    .select(['displayName', 'cups'])
     .sort({ cups: 'descending' })
     .then((Users) => {
       return res.status(200).json({
         success: true,
         message: 'Users',
-        Users: Users,
+        users: Users,
       });
     })
     .catch((err) => {
@@ -30,14 +30,14 @@ module.exports.getUsers = function (req, res) {
 }
 
 module.exports.signUp = async function (req, res) {
-  if (!req.body.username || !req.body.password) {
-    res.json({ success: false, msg: 'Please pass username and password.' });
-  } else {
+  console.log('req.body: ', req.body)
+  if (req.body.username && (req.body.password || req.body.email)) {
     const user = new User({
       _id: mongoose.Types.ObjectId(),
       username: req.body.username,
       password: req.body.password,
       email: req.body.email,
+      displayName: req.body.displayName
     });
     if (await checkUsername(user.username)) {
       return res.status(201).json({
@@ -51,6 +51,7 @@ module.exports.signUp = async function (req, res) {
         return res.status(201).json({
           success: true,
           message: 'User created successfully',
+          user: newUser
         });
       })
       .catch((error) => {
@@ -60,7 +61,116 @@ module.exports.signUp = async function (req, res) {
           error: error.message,
         });
       });
-  };
+  } else {
+    res.json({success: false, msg: 'Please pass username and password/email.'});
+  }
+};
+
+module.exports.requestPasswordReset = async function (req, res) {
+  var username = req.body.username
+
+  email = await getEmailByUsername(username);
+
+  //User not having an email yet
+  if (!email) {
+    return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
+  }
+  else {
+    //Create a verification token for this user
+    var token = new Token({
+      _id: mongoose.Types.ObjectId(),
+      username: username,
+      token: crypto.randomBytes(16).toString('hex')
+    });
+
+    //Save the verification token
+    token.save(function (err) {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      }
+
+      var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+          user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
+          pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
+        }
+      });
+      var mailOptions = {
+        from: 'caro.webnc@gmail.com',
+        to: email,
+        subject: 'Password Reset',
+        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttp:\/\/' +
+            req.headers.host + '\/reset-password\/' +
+            token.token + '.\n'
+      };
+      transporter.sendMail(mailOptions, function (err) {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again.',
+            error: err.message,
+          });
+        }
+        res.status(200).json({
+          message: 'A reset password email has been sent to ' + email + '.'
+        });
+      });
+    });
+  }
+}
+
+module.exports.resetPassword = function (req, res, next) {
+  token = req.query.token
+
+  // Find a matching token
+  Token.findOne({ token: token }, function (err, token) {
+    if (!token) return res.status(401).json({
+      success: false,
+      message: 'Unable to find a valid token. Token may have expired.'
+    });
+
+    // If we found a token, find a matching user
+    User.findOne({ username: token.username }, function (err, user) {
+
+      //Can't find matching token
+      if (!user) return res.status(401).json({ msg: 'Unable to find a user for this token.' });
+
+      //Hash new password
+      user.hashPassword(req.body.newPassword, function (errHash, newHashedPassword) {
+        //Update password
+        User.findOneAndUpdate(
+            { username: token.username },
+            {
+              $set: {
+                password: newHashedPassword,
+              }
+            },
+            {
+              upsert: false
+            }
+        )
+            .then((User) => {
+              console.log(User)
+              return res.status(200).json({
+                success: true,
+                message: 'Password reset successfully.',
+              });
+            })
+            .catch((err) => {
+              res.status(500).json({
+                success: false,
+                message: 'Server error. Please try again.',
+                error: err.message,
+              });
+            });
+      });
+    });
+  });
 };
 
 module.exports.checkUsernameAndEmail = async function (req, res) {
@@ -69,21 +179,21 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
     .then((User) => {
       console.log(User)
       if (User.length > 0) {
-        if (User[0].username == req.body.username && User[0].email == req.body.email)
+        if (User[0].username === req.body.username && User[0].email === req.body.email)
           res.status(200).json({
-            status: "Old user",
+            status: "old_user",
             message: 'This user already exists.',
-            User: User[0],
+            user: User[0],
           });
         else
           res.status(200).json({
-            status: "Invalid",
+            status: "invalid",
             message: 'Invalid username or email.',
           });
       }
       else
         res.status(200).json({
-          status: "New user",
+          status: "new_user",
           message: 'No user with this email exists.',
         });
     })
@@ -126,7 +236,7 @@ module.exports.signIn = function (req, res) {
       user.comparePassword(req.body.password, function (err, isMatch) {
         if (isMatch && !err) {
           var token = jwt.sign(user.toJSON(), jwt_secret_or_key);
-          res.json({ success: true, token: 'JWT ' + token, User: user });
+          res.json({ success: true, token: 'JWT ' + token, user: user });
         } else {
           res.status(401).send({ success: false, msg: 'Authentication failed. Wrong password.' });
         }
@@ -443,13 +553,13 @@ module.exports.addEmailByUsername = function (req, res) {
 // Get leaderboards
 module.exports.getLeaderboard = function (req, res) {
   return User.find()
-    .select('username cups')
+    .select('displayName cups')
     .sort({ cups: 'descending' })
     .then((Users) => {
       return res.status(200).json({
         success: true,
         message: 'Users',
-        Users: Users,
+        users: Users,
       });
     })
     .catch((err) => {
@@ -459,4 +569,63 @@ module.exports.getLeaderboard = function (req, res) {
         error: err.message,
       });
     });
+}
+
+module.exports.getUserByDisplayName = function (req, res) {
+  return User.find({ "displayName": req.query.name }).populate('game_ids')
+      .select()
+      .then((User) => {
+        return res.status(200).json({
+          success: true,
+          message: 'User',
+          user: User,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      });
+}
+
+module.exports.getUserInfo = function (req, res) {
+  return User.find({ "displayName": req.query.name })
+      .select()
+      .then((User) => {
+        return res.status(200).json({
+          success: true,
+          message: 'User',
+          user: User,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      });
+}
+
+module.exports.getUserBeforeUpdate = async (req, res) => {
+  try {
+    return await User.find({displayName: req.displayName})
+        .select(['cups', 'wins', 'level'])
+  } catch (err) {
+    console.log('getUserBeforeUpdate ERROR: ', err)
+  }
+}
+
+module.exports.updateUserAfterGame = async (req,res) => {
+  console.log('REQREQREQ: ', req)
+  try {
+    await User.findOneAndUpdate(
+        {displayName: req.displayName},
+        {$set: {name: req.name, cups: req.cups, wins: req.wins, level: req.level}})
+    console.log('HELLO HELLO HELLO')
+  } catch (err) {
+    console.log('updateUserAfterGame ERROR: ', err)
+  }
 }

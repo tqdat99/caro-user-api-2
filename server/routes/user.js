@@ -1,5 +1,10 @@
 const express = require('express');
 var passport = require('passport');
+const {resetPassword} = require("../controllers/user");
+const {requestPasswordReset} = require("../controllers/user");
+const {getGameById} = require("../controllers/game");
+const {getUserInfo} = require("../controllers/user");
+const {getUserByDisplayName} = require("../controllers/user");
 require('../passport/passport')(passport);
 require('../passport/passport-facebook')(passport);
 require('../passport/passport-google')(passport);
@@ -13,14 +18,14 @@ var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const userRoutes = express.Router();
 
-function isLoggedIn(req, res, next) {
+const isLoggedIn = (req, res, next) => {
     if (req.headers.authorization) {
         var xmlHttp = new XMLHttpRequest(),
             data,
             inputToken = req.headers.authorization.substr(7, req.headers.authorization.length);
 
         //Authorize facebook token
-        theUrl = 'https://graph.facebook.com/debug_token?input_token=' + inputToken + '&access_token=' + facebookAppToken;
+        let theUrl = 'https://graph.facebook.com/debug_token?input_token=' + inputToken + '&access_token=' + facebookAppToken;
         xmlHttp.open("GET", theUrl, false);
         xmlHttp.send(null);
         data = JSON.parse(xmlHttp.responseText.substr(8, xmlHttp.responseText.length - 9));
@@ -56,13 +61,19 @@ userRoutes.get('/', isLoggedIn, getUsers);
 userRoutes.post('/signup', signUp);
 userRoutes.post('/signin', signIn);
 userRoutes.get('/leaderboard', isLoggedIn, getLeaderboard);
-userRoutes.get('/check', checkUsernameAndEmail);
+userRoutes.post('/check', checkUsernameAndEmail);
 userRoutes.get('/user', isLoggedIn, getUserByUsername);
 userRoutes.put('/update', isLoggedIn, updateUserByUsername);
 userRoutes.put('/update-password', isLoggedIn, updatePasswordByUsername);
+userRoutes.post('/request-password-reset', requestPasswordReset);
+userRoutes.post('/reset-password', resetPassword);
 userRoutes.put('/add-email', isLoggedIn, addEmailByUsername);
 userRoutes.get('/create-board', isLoggedIn, createBoard);
 userRoutes.get('/facebook', passport.authenticate('facebook', { scope: ['public_profile', 'email'] }));
+
+userRoutes.get('/user/display-name', isLoggedIn, getUserByDisplayName)
+userRoutes.get('/user/user-info', isLoggedIn, getUserInfo)
+userRoutes.get('/user/game', isLoggedIn, getGameById)
 
 userRoutes.get('/callback',
     passport.authenticate('facebook', {
@@ -76,7 +87,7 @@ userRoutes.get('/callback-google',
     function (req, res) {
         res.redirect('/');
     });
-userRoutes.post('/request-verfication', requestVerification);
+userRoutes.post('/request-verification', requestVerification);
 userRoutes.post('/verify', verify);
 
 module.exports = userRoutes;
