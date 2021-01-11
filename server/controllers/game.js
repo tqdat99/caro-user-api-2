@@ -70,6 +70,7 @@ module.exports.addGame = function(req, res) {
   const newGame = new Game({
     room: req.room,
     playedDate: req.playedDate,
+    winner: req.winner,
     turn:{
       move_x: req.game.turn.move_x,
       move_o: req.game.turn.move_o
@@ -93,3 +94,16 @@ module.exports.addGame = function(req, res) {
     console.log(err)
   }
 }
+
+module.exports.getGameById = async (req, res) => {
+    try {
+        const game = await Game.findById(req.query.id)
+        res.status(200).json({
+            success: true,
+            game: game,
+        })
+    } catch (err) {
+        res.status(400).json({message: err})
+    }
+}
+
