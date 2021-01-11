@@ -161,7 +161,7 @@ module.exports.resetPassword = function (req, res, next) {
           }
         )
           .then((User) => {
-            res.setHeader('Access-Control-Allow-Headers', req.header.origin);
+            //res.setHeader('Access-Control-Allow-Headers', req.header.origin);
             res.setHeader("Access-Control-Allow-Origin", "https://gomoku-user-fe.herokuapp.com");
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Request-Method', '*');
