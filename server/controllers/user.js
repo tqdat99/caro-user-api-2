@@ -162,11 +162,13 @@ module.exports.resetPassword = function (req, res, next) {
           }
         )
           .then((User) => {
-            console.log(User)
-            return res.status(200).json({
-              success: true,
-              message: 'Password reset successfully.',
-            });
+            res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-reset-password' });
+            res.end();
+            // return res.status(200).json({
+            //   success: true,
+            //   message: 'Email verified.',
+            //   User: User,
+            // });
           })
           .catch((err) => {
             res.status(500).json({
@@ -415,43 +417,25 @@ module.exports.requestVerification = async function (req, res) {
   email = await getEmailByUsername(username);
 
   //User not having an email yet
-  if (!email) {
-    return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
-  }
-  else {
-    //Create a verification token for this user
-    var token = new Token({
-      _id: mongoose.Types.ObjectId(),
-      username: username,
-      token: crypto.randomBytes(16).toString('hex')
-    });
-
-    //Save the verification token
-    token.save(function (err) {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
-        });
-      }
-
-      var transporter = nodemailer.createTransport({
-        service: 'Gmail',
-        auth: {
-          user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
-          pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
-        }
+  User.findOne({
+    username: req.body.username
+  }, function (err, user) {
+    if (!user.email) {
+      return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
+    }
+    else if (user.verified) {
+      return res.status(401).send({ success: false, msg: 'User already verified.' });
+    }
+    else {
+      //Create a verification token for this user
+      var token = new Token({
+        _id: mongoose.Types.ObjectId(),
+        username: username,
+        token: crypto.randomBytes(16).toString('hex')
       });
-      var mailOptions = {
-        from: 'caro.webnc@gmail.com',
-        to: email,
-        subject: 'Account Verification',
-        text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
-          req.headers.host + '\/users\/verify?token=' +
-          token.token + '.\n'
-      };
-      transporter.sendMail(mailOptions, function (err) {
+
+      //Save the verification token
+      token.save(function (err) {
         if (err) {
           return res.status(500).json({
             success: false,
@@ -459,12 +443,37 @@ module.exports.requestVerification = async function (req, res) {
             error: err.message,
           });
         }
-        res.status(200).json({
-          message: 'A verification email has been sent to ' + email + '.'
+
+        var transporter = nodemailer.createTransport({
+          service: 'Gmail',
+          auth: {
+            user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
+            pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
+          }
+        });
+        var mailOptions = {
+          from: 'caro.webnc@gmail.com',
+          to: email,
+          subject: 'Account Verification',
+          text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
+            req.headers.host + '\/users\/verify?token=' +
+            token.token + '.\n'
+        };
+        transporter.sendMail(mailOptions, function (err) {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: 'Server error. Please try again.',
+              error: err.message,
+            });
+          }
+          res.status(200).json({
+            message: 'A verification email has been sent to ' + email + '.'
+          });
         });
       });
-    });
-  }
+    };
+  });
 };
 
 module.exports.verify = function (req, res, next) {
@@ -502,12 +511,13 @@ module.exports.verify = function (req, res, next) {
         }
       )
         .then((User) => {
-          console.log(User)
-          return res.status(200).json({
-            success: true,
-            message: 'Email verified.',
-            User: User,
-          });
+          res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-activate-account' });
+          res.end();
+          // return res.status(200).json({
+          //   success: true,
+          //   message: 'Email verified.',
+          //   User: User,
+          // });
         })
         .catch((err) => {
           res.status(500).json({

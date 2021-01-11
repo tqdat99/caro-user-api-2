@@ -69,6 +69,9 @@ userRoutes.get('/facebook', passport.authenticate('facebook', { scope: ['public_
 userRoutes.get('/user/display-name', isLoggedIn, getUserByDisplayName)
 userRoutes.get('/user/user-info', isLoggedIn, getUserInfo)
 userRoutes.get('/user/game', isLoggedIn, getGameById)
+userRoutes.post('/request-verification', isLoggedIn, requestVerification);
+userRoutes.get('/verify', verify);
+
 
 userRoutes.get('/callback',
     passport.authenticate('facebook', {
@@ -82,7 +85,6 @@ userRoutes.get('/callback-google',
     function (req, res) {
         res.redirect('/');
     });
-userRoutes.post('/request-verification', isLoggedIn, requestVerification);
-userRoutes.post('/verify', verify);
+
 
 module.exports = userRoutes;
