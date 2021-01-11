@@ -31,7 +31,6 @@ module.exports.getUsers = function (req, res) {
 
 module.exports.signUp = async function (req, res) {
   if ((req.body.username && (req.body.password || req.body.email))) {
-
     const user = new User({
       _id: mongoose.Types.ObjectId(),
       username: req.body.username,
@@ -461,3 +460,108 @@ module.exports.getLeaderboard = function (req, res) {
       });
     });
 }
+
+module.exports.requestPasswordReset = async function (req, res) {
+  var username = req.body.username
+
+  email = await getEmailByUsername(username);
+
+  //User not having an email yet
+  if (!email) {
+    return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
+  }
+  else {
+    //Create a verification token for this user
+    var token = new Token({
+      _id: mongoose.Types.ObjectId(),
+      username: username,
+      token: crypto.randomBytes(16).toString('hex')
+    });
+
+    //Save the verification token
+    token.save(function (err) {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      }
+
+      var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+          user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
+          pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
+        }
+      });
+      var mailOptions = {
+        from: 'caro.webnc@gmail.com',
+        to: email,
+        subject: 'Password Reset',
+        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttp:\/\/' +
+          req.headers.host + '\/reset-password\/' +
+          token.token + '.\n'
+      };
+      transporter.sendMail(mailOptions, function (err) {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again.',
+            error: err.message,
+          });
+        }
+        res.status(200).json('A reset password email has been sent to ' + email + '.');
+      });
+    });
+  }
+}
+
+module.exports.resetPassword = function (req, res, next) {
+  token = req.query.token
+
+  // Find a matching token
+  Token.findOne({ token: token }, function (err, token) {
+    if (!token) return res.status(401).json({
+      success: false,
+      message: 'Unable to find a valid token. Token may have expired.'
+    });
+
+    // If we found a token, find a matching user
+    User.findOne({ username: token.username }, function (err, user) {
+
+      //Can't find matching token
+      if (!user) return res.status(401).json({ msg: 'Unable to find a user for this token.' });
+
+      //Hash new password
+      user.hashPassword(req.body.newPassword, function (errHash, newHashedPassword) {
+        //Update password
+        User.findOneAndUpdate(
+          { username: token.username },
+          {
+            $set: {
+              password: newHashedPassword,
+            }
+          },
+          {
+            upsert: false
+          }
+        )
+          .then((User) => {
+            console.log(User)
+            return res.status(200).json({
+              success: true,
+              message: 'Password reset successfully.',
+            });
+          })
+          .catch((err) => {
+            res.status(500).json({
+              success: false,
+              message: 'Server error. Please try again.',
+              error: err.message,
+            });
+          });
+      });
+    });
+  });
+};
