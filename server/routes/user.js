@@ -82,7 +82,7 @@ userRoutes.get('/callback-google',
     function (req, res) {
         res.redirect('/');
     });
-userRoutes.post('/request-verification', requestVerification);
+userRoutes.post('/request-verification', isLoggedIn, requestVerification);
 userRoutes.post('/verify', verify);
 
 module.exports = userRoutes;
