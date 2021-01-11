@@ -49,6 +49,7 @@ module.exports.signUp = async function (req, res) {
         return res.status(201).json({
           success: true,
           message: 'User created successfully',
+          User: newUser,
         });
       })
       .catch((error) => {
@@ -162,7 +163,7 @@ module.exports.getUserByUsername = function (req, res) {
       return res.status(200).json({
         success: true,
         message: 'User',
-        User: User,
+        User: User[0],
       });
     })
     .catch((err) => {
@@ -369,6 +370,7 @@ module.exports.verify = function (req, res, next) {
           return res.status(200).json({
             success: true,
             message: 'Email verified.',
+            User: newUser,
           });
         })
         .catch((err) => {
