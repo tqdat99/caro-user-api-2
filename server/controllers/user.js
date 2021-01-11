@@ -314,7 +314,7 @@ module.exports.requestVerification = async function (req, res) {
         to: email,
         subject: 'Account Verification',
         text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
-          req.headers.host + '\/verification\/' +
+          req.headers.host + '\/users\/verify?token=' +
           token.token + '.\n'
       };
       transporter.sendMail(mailOptions, function (err) {

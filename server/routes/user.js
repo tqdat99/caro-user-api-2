@@ -76,6 +76,6 @@ userRoutes.get('/callback-google',
         res.redirect('/');
     });
 userRoutes.post('/request-verfication', requestVerification);
-userRoutes.post('/verify', verify);
+userRoutes.get('/verify', verify);
 
 module.exports = userRoutes;
