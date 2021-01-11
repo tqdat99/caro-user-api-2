@@ -1,7 +1,5 @@
 const express = require('express');
 var passport = require('passport');
-const {resetPassword} = require("../controllers/user");
-const {requestPasswordReset} = require("../controllers/user");
 const {getGameById} = require("../controllers/game");
 const {getUserInfo} = require("../controllers/user");
 const {getUserByDisplayName} = require("../controllers/user");
@@ -9,7 +7,7 @@ require('../passport/passport')(passport);
 require('../passport/passport-facebook')(passport);
 require('../passport/passport-google')(passport);
 
-const { getUsers, getUserByUsername, signUp, signIn, updateUserByUsername, updatePasswordByUsername, requestVerification, verify, updateEmailByUsername, addEmailByUsername, checkUsernameAndEmail, getLeaderboard, resetPassword, requestPasswordReset } = require('../controllers/user');
+const { getUsers, getUserByUsername, signUp, signIn, updateUserByUsername, updatePasswordByUsername, requestVerification, verify, addEmailByUsername, checkUsernameAndEmail, getLeaderboard, resetPassword, requestPasswordReset } = require('../controllers/user');
 const { createBoard } = require('../controllers/board');
 const facebookAppToken = process.env.FACEBOOK_APP || '4166090010091919|5558yQbRtuqtUNI8uJfcSkqC3ig';
 const googleApp = process.env.GOOGLE_CONSUMER_KEY || '846280586932-oabrjoonglegin6tf7q1qn6jm192g0qn.apps.googleusercontent.com'
