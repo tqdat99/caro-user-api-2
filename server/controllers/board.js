@@ -22,7 +22,7 @@ module.exports.getBoards = function (req, res) {
         error: err.message,
       });
     });
-}
+};
 
 //Create boards
 module.exports.createBoard = function (req, res) {

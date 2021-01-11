@@ -66,12 +66,12 @@ const User = require('../models/user')
 //   });
 // };
 
-module.exports.addGame = function(req, res) {
+module.exports.addGame = function (req, res) {
   const newGame = new Game({
     room: req.room,
     playedDate: req.playedDate,
     winner: req.winner,
-    turn:{
+    turn: {
       move_x: req.game.turn.move_x,
       move_o: req.game.turn.move_o
     },
@@ -80,30 +80,30 @@ module.exports.addGame = function(req, res) {
   })
   try {
     newGame.save()
-        .then((response) => {
-          User.findOneAndUpdate({username: response.turn.move_x}, {$push: {game_ids: response._id}}, {new: true})
-              .then((res) => {
-                  console.log('Database Update', res)
-              })
-          User.findOneAndUpdate({username: response.turn.move_o}, {$push: {game_ids: response._id}}, {new: true})
-              .then((res) => {
-                  console.log('Database Update', res)
-              })
-        })
+      .then((response) => {
+        User.findOneAndUpdate({ username: response.turn.move_x }, { $push: { game_ids: response._id } }, { new: true })
+          .then((res) => {
+            console.log('Database Update', res)
+          })
+        User.findOneAndUpdate({ username: response.turn.move_o }, { $push: { game_ids: response._id } }, { new: true })
+          .then((res) => {
+            console.log('Database Update', res)
+          })
+      })
   } catch (err) {
     console.log(err)
   }
-}
+};
 
 module.exports.getGameById = async (req, res) => {
-    try {
-        const game = await Game.findById(req.query.id)
-        res.status(200).json({
-            success: true,
-            game: game,
-        })
-    } catch (err) {
-        res.status(400).json({message: err})
-    }
-}
+  try {
+    const game = await Game.findById(req.query.id)
+    res.status(200).json({
+      success: true,
+      game: game,
+    })
+  } catch (err) {
+    res.status(400).json({ message: err })
+  }
+};
 

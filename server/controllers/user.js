@@ -211,7 +211,7 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
         error: err.message,
       });
     });
-}
+};
 
 // Get user by username
 checkUsername = function (username) {
@@ -230,7 +230,7 @@ checkUsername = function (username) {
         error: err.message,
       });
     });
-}
+};
 
 checkEmail = function (email) {
   return User.find({ "email": email })
@@ -248,7 +248,7 @@ checkEmail = function (email) {
         error: err.message,
       });
     });
-}
+};
 
 module.exports.signIn = function (req, res) {
   User.findOne({
@@ -335,7 +335,7 @@ module.exports.updateUserByUsername = function (req, res) {
         error: err.message,
       });
     });
-}
+};
 
 module.exports.updatePasswordByUsername = function (req, res) {
   User.findOne({
@@ -465,7 +465,7 @@ module.exports.requestVerification = async function (req, res) {
       });
     });
   }
-}
+};
 
 module.exports.verify = function (req, res, next) {
   token = req.query.token
@@ -517,142 +517,143 @@ module.exports.verify = function (req, res, next) {
           });
         });
     });
-  };
+  });
+};
 
-  // Get user by username
-  getEmailByUsername = function (username) {
-    return User.find({ "username": username })
-      .select('email')
-      .then((result) => {
-        return result[0].email;
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
-        });
-      });
-  }
-
-  module.exports.addEmailByUsername = function (req, res) {
-    return User.find({ username: req.body.username })
-      .select()
-      .then((user) => {
-        console.log(user);
-        if (!user) return res.status(401).json({ msg: 'Unable to find a user.' });
-        if (!user.email) return res.status(401).json({ msg: 'User already has an email.' });
-        return User.findOneAndUpdate(
-          { username: req.body.username },
-          {
-            $set: {
-              email: req.body.email,
-            }
-          },
-          {
-            upsert: false
+module.exports.addEmailByUsername = function (req, res) {
+  return User.find({ username: req.body.username })
+    .select()
+    .then((user) => {
+      console.log(user);
+      if (!user) return res.status(401).json({ msg: 'Unable to find a user.' });
+      if (!user.email) return res.status(401).json({ msg: 'User already has an email.' });
+      return User.findOneAndUpdate(
+        { username: req.body.username },
+        {
+          $set: {
+            email: req.body.email,
           }
-        )
-          .then((User) => {
-            return res.status(200).json({
-              success: true,
-              message: 'Email added.',
-              User: User,
-            });
-          })
-          .catch((err) => {
-            res.status(500).json({
-              success: false,
-              message: 'Server error. Please try again.',
-              error: err.message,
-            });
+        },
+        {
+          upsert: false
+        }
+      )
+        .then((User) => {
+          return res.status(200).json({
+            success: true,
+            message: 'Email added.',
+            User: User,
           });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
+        })
+        .catch((err) => {
+          res.status(500).json({
+            success: false,
+            message: 'Server error. Please try again.',
+            error: err.message,
+          });
         });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
       });
-  }
+    });
+};
 
-  // Get leaderboards
-  module.exports.getLeaderboard = function (req, res) {
-    return User.find()
-      .select('displayName cups')
-      .sort({ cups: 'descending' })
-      .then((Users) => {
-        return res.status(200).json({
-          success: true,
-          message: 'Users',
-          users: Users,
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
-        });
+// Get leaderboards
+module.exports.getLeaderboard = function (req, res) {
+  return User.find()
+    .select('displayName cups')
+    .sort({ cups: 'descending' })
+    .then((Users) => {
+      return res.status(200).json({
+        success: true,
+        message: 'Users',
+        users: Users,
       });
-  }
-
-  module.exports.getUserByDisplayName = function (req, res) {
-    return User.find({ "displayName": req.query.name }).populate('game_ids')
-      .select()
-      .then((User) => {
-        return res.status(200).json({
-          success: true,
-          message: 'User',
-          user: User,
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
-        });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
       });
-  }
+    });
+};
 
-  module.exports.getUserInfo = function (req, res) {
-    return User.find({ "displayName": req.query.name })
-      .select()
-      .then((User) => {
-        return res.status(200).json({
-          success: true,
-          message: 'User',
-          user: User,
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: 'Server error. Please try again.',
-          error: err.message,
-        });
+module.exports.getUserByDisplayName = function (req, res) {
+  return User.find({ "displayName": req.query.name }).populate('game_ids')
+    .select()
+    .then((User) => {
+      return res.status(200).json({
+        success: true,
+        message: 'User',
+        user: User,
       });
-  }
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+};
 
-  module.exports.getUserBeforeUpdate = async (req, res) => {
-    try {
-      return await User.find({ displayName: req.displayName })
-        .select(['cups', 'wins', 'level'])
-    } catch (err) {
-      console.log('getUserBeforeUpdate ERROR: ', err)
-    }
-  }
+module.exports.getUserInfo = function (req, res) {
+  return User.find({ "displayName": req.query.name })
+    .select()
+    .then((User) => {
+      return res.status(200).json({
+        success: true,
+        message: 'User',
+        user: User,
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+};
 
-  module.exports.updateUserAfterGame = async (req, res) => {
-    console.log('REQREQREQ: ', req)
-    try {
-      await User.findOneAndUpdate(
-        { displayName: req.displayName },
-        { $set: { name: req.name, cups: req.cups, wins: req.wins, level: req.level } })
-      console.log('HELLO HELLO HELLO')
-    } catch (err) {
-      console.log('updateUserAfterGame ERROR: ', err)
-    }
+module.exports.getUserBeforeUpdate = async (req, res) => {
+  try {
+    return await User.find({ displayName: req.displayName })
+      .select(['cups', 'wins', 'level'])
+  } catch (err) {
+    console.log('getUserBeforeUpdate ERROR: ', err)
   }
+};
+
+module.exports.updateUserAfterGame = async (req, res) => {
+  console.log('REQREQREQ: ', req)
+  try {
+    await User.findOneAndUpdate(
+      { displayName: req.displayName },
+      { $set: { name: req.name, cups: req.cups, wins: req.wins, level: req.level } })
+    console.log('HELLO HELLO HELLO')
+  } catch (err) {
+    console.log('updateUserAfterGame ERROR: ', err)
+  }
+};
+
+// Get user by username
+getEmailByUsername = function (username) {
+  return User.find({ "username": username })
+    .select('email')
+    .then((result) => {
+      return result[0].email;
+    })
+    .catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: 'Server error. Please try again.',
+        error: err.message,
+      });
+    });
+};
