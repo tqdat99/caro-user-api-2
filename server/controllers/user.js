@@ -111,8 +111,7 @@ module.exports.requestPasswordReset = async function (req, res) {
         from: 'caro.webnc@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttp://' +
-          req.headers.host + '/users/reset-password/' +
+        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttps://gomoku-user-fe.herokuapp.com/reset-password/' +
           token.token + '.\n'
       };
       transporter.sendMail(mailOptions, function (err) {
