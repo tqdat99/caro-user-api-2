@@ -1,7 +1,7 @@
 const checkResult = require("./checkResult");
-const {updateUserAfterGame} = require("../controllers/user");
-const {getUserBeforeUpdate} = require("../controllers/user");
-const {addGame} = require("../controllers/game");
+const { updateUserAfterGame } = require("../controllers/user");
+const { getUserBeforeUpdate } = require("../controllers/user");
+const { addGame } = require("../controllers/game");
 const BOARD_SIZE = 15
 const usersMap = new Map()
 const roomsMap = new Map()
@@ -9,27 +9,34 @@ const randomRoom = []
 
 module.exports = function (io, socket) {
     /*ON CONNECTION*/
-    const user = socket.handshake.query.username
+    const user = socket.handshake.query.username;
+    const admin = socket.handshake.query.admin;
+    console.log(admin);
     console.log(`${user} - ${socket.id} CONNECT`)
-    if (usersMap.has(user)) {
-        usersMap.get(user).add(socket.id)
-    } else {
-        usersMap.set(user, new Set([socket.id]));
+    if (admin == 1) {
+        io.emit('Online-Users', Array.from(usersMap.keys()))
     }
-    io.emit('Online-Users', Array.from(usersMap.keys()))
-    io.emit('Active-Rooms', Array.from(roomsMap.values()))
+    else {
+        if (usersMap.has(user)) {
+            usersMap.get(user).add(socket.id)
+        } else {
+            usersMap.set(user, new Set([socket.id]));
+        }
+        io.emit('Online-Users', Array.from(usersMap.keys()))
+        io.emit('Active-Rooms', Array.from(roomsMap.values()))
 
-    onDisconnection(io, socket, user)
-    onFindRandomRoom(io, socket, user)
-    onPlayMove(io, socket, user)
-    onChat(io, socket, user)
-    onSurrender(io, socket, user)
-    onTimeOut(io, socket, user)
-    onNewGame(io, socket, user)
-    onCreateRoom(io, socket, user)
-    onJoinRoom(io, socket, user)
-    onInvitePlayer(io, socket, user)
-    onReplyInvite(io, socket, user)
+        onDisconnection(io, socket, user)
+        onFindRandomRoom(io, socket, user)
+        onPlayMove(io, socket, user)
+        onChat(io, socket, user)
+        onSurrender(io, socket, user)
+        onTimeOut(io, socket, user)
+        onNewGame(io, socket, user)
+        onCreateRoom(io, socket, user)
+        onJoinRoom(io, socket, user)
+        onInvitePlayer(io, socket, user)
+        onReplyInvite(io, socket, user)
+    };
 }
 
 const updateUserDbService = (winnerName, loserName) => {
@@ -119,7 +126,7 @@ const onFindRandomRoom = (io, socket, user) => {
                 randomRoom[i].game.turn.move_o = user
                 randomRoom[i].game.messages.push({
                     sender: "admin",
-                    message:`${user} has joined room.`
+                    message: `${user} has joined room.`
                 })
                 socket.room = randomRoom[i].id
                 socket.type = 'random'
@@ -147,7 +154,7 @@ const onFindRandomRoom = (io, socket, user) => {
                 messages: [
                     {
                         sender: 'admin',
-                        message:`${user} has joined room.`
+                        message: `${user} has joined room.`
                     }
                 ]
             }
@@ -307,7 +314,7 @@ const onNewGame = (io, socket, user) => {
         }
         room.game.messages.push({
             sender: 'admin',
-            message:`${user} has joined room.`
+            message: `${user} has joined room.`
         })
         io.to(room.id).emit('Someone-Join-Room', room)
     })
@@ -334,7 +341,7 @@ const onCreateRoom = (io, socket, user) => {
                 messages: [
                     {
                         sender: 'admin',
-                        message:`${user} has joined room.`
+                        message: `${user} has joined room.`
                     }
                 ]
             }
@@ -356,7 +363,7 @@ const onJoinRoom = (io, socket, user) => {
         room.game.turn.move_o = user
         room.game.messages.push({
             sender: "admin",
-            message:`${user} has joined room.`
+            message: `${user} has joined room.`
         })
         socket.room = room.id
         socket.type = 'normal'
@@ -388,7 +395,7 @@ const onInvitePlayer = (io, socket, user) => {
                 messages: [
                     {
                         sender: 'admin',
-                        message:`${user} has joined room.`
+                        message: `${user} has joined room.`
                     }
                 ]
             }
@@ -431,7 +438,7 @@ const onReplyInvite = (io, socket, user) => {
             room.game.turn.move_o = user
             room.game.messages.push({
                 sender: "admin",
-                message:`${user} has joined room.`
+                message: `${user} has joined room.`
             })
             socket.room = room.id
             socket.type = 'buddy'
