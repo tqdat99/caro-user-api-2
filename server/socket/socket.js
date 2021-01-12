@@ -14,9 +14,13 @@ module.exports = function (io, socket) {
     console.log(admin);
     console.log(`${user} - ${socket.id} CONNECT`)
     if (admin == 1) {
+        console.log('admin');
+
         io.emit('Online-Users', Array.from(usersMap.keys()))
     }
     else {
+        console.log('user');
+
         if (usersMap.has(user)) {
             usersMap.get(user).add(socket.id)
         } else {
