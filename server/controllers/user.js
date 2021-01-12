@@ -33,7 +33,7 @@ module.exports.getUsers = function (req, res) {
 }
 
 module.exports.signUp = async function (req, res) {
-  if (req.body.username && req.body.password && req.body.email) {
+  if (req.body.username && req.body.email) {
     const user = new User({
       _id: mongoose.Types.ObjectId(),
       username: req.body.username,
@@ -598,7 +598,7 @@ module.exports.getLeaderboard = function (req, res) {
 };
 
 module.exports.getUserByDisplayName = function (req, res) {
-  return User.find({ "displayName": req.query.name }).populate('game_ids')
+  return User.find({ "displayName": req.query.name }).populate({path: 'game_ids', select: ['playedDate', 'room', 'winner']})
     .select()
     .then((User) => {
       return res.status(200).json({
