@@ -18,19 +18,19 @@ const checkResult = (squares, step, boardSize, playerMove) => {
     let winState = (boardSize < 5) ? 3 : 5
 
     // check row
-    let line=[step[0] * boardSize + step[1]]
+    let line = [step[0] * boardSize + step[1]]
     let countLeft = 0;
     let countRight = 0;
     for (let i = column - 1; i >= 0; i--) {
         if (matrix[row][i] === playerMove) {
             countLeft++;
-            line.push(row*boardSize+i)
+            line.push(row * boardSize + i)
         } else break;
     }
     for (let i = column + 1; i < boardSize; i++) {
         if (matrix[row][i] === playerMove) {
             countRight++;
-            line.push(row*boardSize+i)
+            line.push(row * boardSize + i)
         } else break;
     }
     if (countLeft + countRight >= winState - 1)
@@ -40,19 +40,19 @@ const checkResult = (squares, step, boardSize, playerMove) => {
         };
 
     //check column
-    line=[step[0] * boardSize + step[1]]
+    line = [step[0] * boardSize + step[1]]
     countLeft = 0;
     countRight = 0;
     for (let i = row - 1; i >= 0; i--) {
         if (matrix[i][column] === playerMove) {
             countLeft++;
-            line.push(i*boardSize+column)
+            line.push(i * boardSize + column)
         } else break;
     }
     for (let i = row + 1; i < boardSize; i++) {
         if (matrix[i][column] === playerMove) {
             countRight++;
-            line.push(i*boardSize+column)
+            line.push(i * boardSize + column)
         } else break;
     }
     if (countLeft + countRight >= winState - 1)
@@ -62,7 +62,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
         };
 
     //check diag
-    line=[step[0] * boardSize + step[1]]
+    line = [step[0] * boardSize + step[1]]
     countLeft = 0;
     countRight = 0;
     let i = row - 1;
@@ -70,7 +70,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
     while (i >= 0 && j >= 0) {
         if (matrix[i][j] === playerMove) {
             countLeft++;
-            line.push(i*boardSize+j)
+            line.push(i * boardSize + j)
         } else break;
         i--;
         j--;
@@ -80,7 +80,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
     while (i < boardSize && j < boardSize) {
         if (matrix[i][j] === playerMove) {
             countRight++;
-            line.push(i*boardSize+j)
+            line.push(i * boardSize + j)
         } else break;
         i++;
         j++;
@@ -92,7 +92,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
         };
 
     //check anti diag
-    line=[step[0] * boardSize + step[1]]
+    line = [step[0] * boardSize + step[1]]
     countLeft = 0;
     countRight = 0;
     i = row + 1;
@@ -100,7 +100,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
     while (i < boardSize && j >= 0) {
         if (matrix[i][j] === playerMove) {
             countLeft++;
-            line.push(i*boardSize+j)
+            line.push(i * boardSize + j)
         } else break;
         i++;
         j--;
@@ -110,7 +110,7 @@ const checkResult = (squares, step, boardSize, playerMove) => {
     while (i >= 0 && j < boardSize) {
         if (matrix[i][j] === playerMove) {
             countRight++;
-            line.push(i*boardSize+j)
+            line.push(i * boardSize + j)
         } else break;
         i--;
         j++;
