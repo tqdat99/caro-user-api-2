@@ -15,11 +15,6 @@ module.exports = function (io, socket) {
     console.log(`${user} - ${socket.id} CONNECT`)
     if (admin == 1) {
         console.log('admin');
-        usersMap.delete(0);
-        usersMap.delete(1);
-        usersMap.delete(2);
-        usersMap.delete(3);
-
         io.emit('Online-Users', Array.from(usersMap.keys()))
     }
     else {
