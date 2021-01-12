@@ -194,7 +194,6 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
             res.status(200).json({
               status: "locked_user",
               message: 'This user has ben locked.',
-              user: User[0],
             });
           res.status(200).json({
             status: "old_user",
@@ -272,7 +271,7 @@ module.exports.signIn = function (req, res) {
       user.comparePassword(req.body.password, function (err, isMatch) {
         if (isMatch && !err) {
           var token = jwt.sign(user.toJSON(), jwt_secret_or_key);
-          res.json({ success: true, token: 'JWT ' + token, user: user });
+          res.status(200).json({ success: true, token: 'JWT ' + token, user: user });
         } else {
           res.status(401).send({ success: false, msg: 'Authentication failed. Wrong password.' });
         }
@@ -653,12 +652,10 @@ module.exports.getUserBeforeUpdate = async (req, res) => {
 };
 
 module.exports.updateUserAfterGame = async (req, res) => {
-  console.log('REQREQREQ: ', req)
   try {
     await User.findOneAndUpdate(
       { displayName: req.displayName },
       { $set: { name: req.name, cups: req.cups, wins: req.wins, level: req.level } })
-    console.log('HELLO HELLO HELLO')
   } catch (err) {
     console.log('updateUserAfterGame ERROR: ', err)
   }
