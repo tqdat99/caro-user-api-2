@@ -8,6 +8,9 @@ var nodemailer = require('nodemailer');
 const User = require('../models/user');
 const Token = require('../models/token');
 
+// const redirectENDPOINT = 'http://localhost:3000'
+const redirectENDPOINT = 'https://gomoku-user-fe.herokuapp.com'
+
 // Get users
 module.exports.getUsers = function (req, res) {
   return User.find()
@@ -111,8 +114,9 @@ module.exports.requestPasswordReset = async function (req, res) {
         from: 'caro.webnc@gmail.com',
         to: email,
         subject: 'Password Reset',
-        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \nhttps://gomoku-user-fe.herokuapp.com/reset-password/' +
-          token.token + '.\n'
+        text: 'Hello,\n\n' + 'Please reset your password by clicking the link: \n' +
+            redirectENDPOINT + '/reset-password?token=' +
+            token.token
       };
       transporter.sendMail(mailOptions, function (err) {
         if (err) {
@@ -150,38 +154,30 @@ module.exports.resetPassword = function (req, res, next) {
       user.hashPassword(req.body.newPassword, function (errHash, newHashedPassword) {
         //Update password
         User.findOneAndUpdate(
-          { username: token.username },
-          {
-            $set: {
-              password: newHashedPassword,
+            { username: token.username },
+            {
+              $set: {
+                password: newHashedPassword,
+              }
+            },
+            {
+              upsert: false
             }
-          },
-          {
-            upsert: false
-          }
         )
-          .then((User) => {
-            //res.setHeader('Access-Control-Allow-Headers', req.header.origin);
-            res.setHeader("Access-Control-Allow-Origin", "https://gomoku-user-fe.herokuapp.com");
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Request-Method', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
-            res.setHeader('Access-Control-Allow-Headers', '*');
-            res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-reset-password' });
-            res.end();
-            // return res.status(200).json({
-            //   success: true,
-            //   message: 'Email verified.',
-            //   User: User,
-            // });
-          })
-          .catch((err) => {
-            res.status(500).json({
-              success: false,
-              message: 'Server error. Please try again.',
-              error: err.message,
+            .then((User) => {
+              console.log(User)
+              return res.status(200).json({
+                success: true,
+                message: 'Password reset successfully.',
+              });
+            })
+            .catch((err) => {
+              res.status(500).json({
+                success: false,
+                message: 'Server error. Please try again.',
+                error: err.message,
+              });
             });
-          });
       });
     });
   });
@@ -422,25 +418,43 @@ module.exports.requestVerification = async function (req, res) {
   email = await getEmailByUsername(username);
 
   //User not having an email yet
-  User.findOne({
-    username: req.body.username
-  }, function (err, user) {
-    if (!user.email) {
-      return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
-    }
-    else if (user.verified) {
-      return res.status(401).send({ success: false, msg: 'User already verified.' });
-    }
-    else {
-      //Create a verification token for this user
-      var token = new Token({
-        _id: mongoose.Types.ObjectId(),
-        username: username,
-        token: crypto.randomBytes(16).toString('hex')
-      });
+  if (!email) {
+    return res.status(401).send({ success: false, msg: 'User not having an email yet.' });
+  }
+  else {
+    //Create a verification token for this user
+    var token = new Token({
+      _id: mongoose.Types.ObjectId(),
+      username: username,
+      token: crypto.randomBytes(16).toString('hex')
+    });
 
-      //Save the verification token
-      token.save(function (err) {
+    //Save the verification token
+    token.save(function (err) {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: 'Server error. Please try again.',
+          error: err.message,
+        });
+      }
+
+      var transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+          user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
+          pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
+        }
+      });
+      var mailOptions = {
+        from: 'caro.webnc@gmail.com',
+        to: email,
+        subject: 'Account Verification',
+        text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp:\/\/' +
+            req.headers.host + '/users/verify?token=' +
+            token.token
+      };
+      transporter.sendMail(mailOptions, function (err) {
         if (err) {
           return res.status(500).json({
             success: false,
@@ -448,89 +462,74 @@ module.exports.requestVerification = async function (req, res) {
             error: err.message,
           });
         }
-
-        var transporter = nodemailer.createTransport({
-          service: 'Gmail',
-          auth: {
-            user: process.env.MAILER_USERNAME || 'caro.webnc@gmail.com',
-            pass: process.env.MAILER_PASSWORD || 'caro.webnc.17'
-          }
-        });
-        var mailOptions = {
-          from: 'caro.webnc@gmail.com',
-          to: email,
-          subject: 'Account Verification',
-          text: 'Hello,\n\n' + 'Please verify your account by clicking the link: \nhttp://' +
-            req.headers.host + '/users/verify?token=' +
-            token.token + '.\n'
-        };
-        transporter.sendMail(mailOptions, function (err) {
-          if (err) {
-            return res.status(500).json({
-              success: false,
-              message: 'Server error. Please try again.',
-              error: err.message,
-            });
-          }
-          res.status(200).json({
-            message: 'A verification email has been sent to ' + email + '.'
-          });
+        res.status(200).json({
+          message: 'A verification email has been sent to ' + email + '.'
         });
       });
-    };
-  });
-};
+    });
+  }
+}
 
 module.exports.verify = function (req, res, next) {
-  token = req.query.token
-
+  const token = req.query.token
   // Find a matching token
   Token.findOne({ token: token }, function (err, token) {
-    if (!token) return res.status(401).json({
-      success: false,
-      message: 'Unable to find a valid token. Token may have expired.'
-    });
+    if (!token) {
+      // return res.status(401).json({
+      //   success: false,
+      //   message: 'Unable to find a valid token. Token may have expired.'
+      // });
+      res.redirect(redirectENDPOINT + '/result-activate-account?result=error');
+    }
 
     // If we found a token, find a matching user
     User.findOne({ username: token.username }, function (err, user) {
 
       //Can't find matching token
-      if (!user) return res.status(401).json({ msg: 'Unable to find a user for this token.' });
+      if (!user) {
+        // return res.status(401).json({
+        //   msg: 'Unable to find a user for this token.'
+        // });
+        res.redirect(redirectENDPOINT + '/result-activate-account?result=error');
+      }
 
       //Email already verified
-      if (user.verified) return res.status(401).json({
-        success: false,
-        message: 'Email already verified.'
-      });
+      if (user.verified) {
+        // return res.status(401).json({
+        //   success: false,
+        //   message: 'Email already verified.'
+        // });
+        res.redirect(redirectENDPOINT + '/result-activate-account?result=error');
+      }
 
       // Verify and save the user
       User.findOneAndUpdate(
-        { username: token.username },
-        {
-          $set: {
-            verified: 'true',
+          { username: token.username },
+          {
+            $set: {
+              verified: 'true',
+            }
+          },
+          {
+            upsert: false
           }
-        },
-        {
-          upsert: false
-        }
       )
-        .then((User) => {
-          res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-activate-account' });
-          res.end();
-          // return res.status(200).json({
-          //   success: true,
-          //   message: 'Email verified.',
-          //   User: User,
-          // });
-        })
-        .catch((err) => {
-          res.status(500).json({
-            success: false,
-            message: 'Server error. Please try again.',
-            error: err.message,
+          .then((User) => {
+            console.log(User)
+            // return res.status(200).json({
+            //   success: true,
+            //   message: 'Email verified.',
+            // });
+            res.redirect(redirectENDPOINT + '/result-activate-account?result=success');
+          })
+          .catch((err) => {
+            // res.status(500).json({
+            //   success: false,
+            //   message: 'Server error. Please try again.',
+            //   error: err.message,
+            // });
+            res.redirect(redirectENDPOINT + '/result-activate-account?result=error');
           });
-        });
     });
   });
 };
