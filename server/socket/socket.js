@@ -2,10 +2,10 @@ const checkResult = require("./checkResult");
 const { updateUserAfterGame } = require("../controllers/user");
 const { getUserBeforeUpdate } = require("../controllers/user");
 const { addGame } = require("../controllers/game");
-const BOARD_SIZE = 15
+const BOARD_SIZE = 20
 const usersMap = new Map()
 const roomsMap = new Map()
-const randomRoom = []
+let randomRoom = []
 
 module.exports = function (io, socket) {
     /*ON CONNECTION*/
@@ -43,37 +43,35 @@ module.exports = function (io, socket) {
 }
 
 const updateUserDbService = (winnerName, loserName) => {
-    getUserBeforeUpdate({
+    const promiseWinner = getUserBeforeUpdate({
         displayName: winnerName
-    }).then(response => {
-        const winner = response[0]
-        console.log('WINNER: ', winner)
-
-        let newLevel = winner.level
-        if (winner.cups >= 20) newLevel = 'silver'
-        else if (winner.cups >= 50) newLevel = 'gold'
-        else if (winner.cups >= 100) newLevel = 'diamond'
-        updateUserAfterGame({
-            displayName: winnerName,
-            cups: winner.cups + 1,
-            wins: winner.wins + 1,
-            level: newLevel
-        })
     })
-
-    getUserBeforeUpdate({
+    const promiseLoser = getUserBeforeUpdate({
         displayName: loserName
-    }).then(response => {
-        const loser = response[0]
-        console.log('LOSER: ', loser)
-
-        updateUserAfterGame({
-            displayName: loserName,
-            cups: (loser.cups > 0) ? loser.cups - 1 : 0,
-            wins: loser.wins,
-            level: loser.level
-        })
     })
+    Promise.all([promiseWinner, promiseLoser])
+        .then((promiseArray) => {
+            const winner = promiseArray[0][0]
+            const loser = promiseArray[1][0]
+            const winnerCups = (winner.cups < loser.cups) ? winner.cups + 2 : winner.cups + 1
+            const loserCups = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? loser.cups - 2 : loser.cups - 1
+            let newLevel = winner.level
+            if (winner.cups >= 20) newLevel = 'silver'
+            else if (winner.cups >= 50) newLevel = 'gold'
+            else if (winner.cups >= 100) newLevel = 'diamond'
+            updateUserAfterGame({
+                displayName: winnerName,
+                cups: winnerCups,
+                wins: winner.wins + 1,
+                level: newLevel
+            })
+            updateUserAfterGame({
+                displayName: loserName,
+                cups: loserCups,
+                wins: loser.wins,
+                level: loser.level
+            })
+        })
 }
 
 const onDisconnection = (io, socket, user) => {
@@ -92,29 +90,39 @@ const onDisconnection = (io, socket, user) => {
             room = roomsMap.get(socket.room)
         }
         if (room) {
-            if (room.players.length > 0) {
-                room.players = []
-                room.game = {
-                    turn: {},
-                    history: [
-                        Array(BOARD_SIZE * BOARD_SIZE).fill(null)
-                    ],
-                    messages: []
+            if (room.players.length === 2) {
+                if (room.game.turn.move_x) { // dang game ma thoat
+                    addGame({
+                        room: room.name,
+                        playedDate: new Date().toUTCString(),
+                        game: room.game,
+                        winner: room.players.find(item => item !== user)
+                    })
+                    updateUserDbService(room.players.find(item => item !== user), user)
+
+                    room.players = room.players.filter(item => item !== user)
+                    room.game = {
+                        turn: {},
+                        history: [
+                            Array(BOARD_SIZE * BOARD_SIZE).fill(null)
+                        ],
+                        messages: []
+                    }
+                    io.to(socket.room).emit('Game-Result', {
+                        line: [],
+                        message: `${user} has left game!`
+                    })
+
+                } else { // het game roi moi quit
+                    room.players = room.players.filter(item => item !== user)
+                    // io.emit('Active-Rooms', Array.from(roomsMap.values()))
                 }
-                io.to(socket.room).emit('Game-Result', {
-                    line: [],
-                    message: `${user} has left game!`
-                })
-                addGame({
-                    room: room.name,
-                    playedDate: new Date().toUTCString(),
-                    game: room.game,
-                    winner: room.players.find(item => item !== user)
-                })
-                updateUserDbService(room.players.find(item => item !== user), user)
-            } else {
-                roomsMap.delete(room.id)
-                io.emit('Active-Rooms', Array.from(roomsMap.values()))
+            } else if (room.players.length === 1) {
+                if (room.players[0] === user) {
+                    roomsMap.delete(room.id)
+                    randomRoom = randomRoom.filter(item => item.id !== room.id)
+                    io.emit('Active-Rooms', Array.from(roomsMap.values()))
+                }
             }
         }
     })
@@ -194,7 +202,7 @@ const onPlayMove = (io, socket, user) => {
             })
             if (result.status !== 'draw')
                 updateUserDbService(user, room.players.find(item => item !== user))
-            room.players = []
+            // room.players = []
             room.game = {
                 turn: {},
                 history: [
@@ -253,7 +261,7 @@ const onSurrender = (io, socket, user) => {
             winner: room.players.find(item => item !== user)
         })
         updateUserDbService(room.players.find(item => item !== user), user)
-        room.players = []
+        // room.players = []
         room.game = {
             turn: {},
             history: [
@@ -284,7 +292,7 @@ const onTimeOut = (io, socket, user) => {
             winner: room.players.find(item => item !== user)
         })
         updateUserDbService(room.players.find(item => item !== user), user)
-        room.players = []
+        // room.players = []
         room.game = {
             turn: {},
             history: [
