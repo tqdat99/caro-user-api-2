@@ -162,18 +162,18 @@ module.exports.resetPassword = function (req, res, next) {
         )
           .then((User) => {
             //res.setHeader('Access-Control-Allow-Headers', req.header.origin);
-            res.setHeader("Access-Control-Allow-Origin", "https://gomoku-user-fe.herokuapp.com");
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Request-Method', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
-            res.setHeader('Access-Control-Allow-Headers', '*');
-            res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-reset-password' });
-            res.end();
-            // return res.status(200).json({
-            //   success: true,
-            //   message: 'Email verified.',
-            //   User: User,
-            // });
+            // res.setHeader("Access-Control-Allow-Origin", "https://gomoku-user-fe.herokuapp.com");
+            // res.setHeader('Access-Control-Allow-Origin', '*');
+            // res.setHeader('Access-Control-Request-Method', '*');
+            // res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+            // res.setHeader('Access-Control-Allow-Headers', '*');
+            // res.writeHead(301, { Location: 'https://gomoku-user-fe.herokuapp.com/result-reset-password' });
+            // res.end();
+            return res.status(200).json({
+              success: true,
+              message: 'Password updated successfully.',
+              User: User,
+            });
           })
           .catch((err) => {
             res.status(500).json({
@@ -193,12 +193,19 @@ module.exports.checkUsernameAndEmail = async function (req, res) {
     .then((User) => {
       console.log(User)
       if (User.length > 0) {
-        if (User[0].username === req.body.username && User[0].email === req.body.email)
+        if (User[0].username === req.body.username && User[0].email === req.body.email) {
+          if (User[0].active == '0')
+            res.status(200).json({
+              status: "locked_user",
+              message: 'This user has ben locked.',
+              user: User[0],
+            });
           res.status(200).json({
             status: "old_user",
             message: 'This user already exists.',
             user: User[0],
           });
+        }
         else
           res.status(200).json({
             status: "invalid",
@@ -265,6 +272,7 @@ module.exports.signIn = function (req, res) {
     if (!user) {
       res.status(401).send({ success: false, msg: 'Authentication failed. User not found.' });
     } else {
+      if (user.active == '0') return res.status(401).send({ success: false, msg: 'This account has been locked.' });
       user.comparePassword(req.body.password, function (err, isMatch) {
         if (isMatch && !err) {
           var token = jwt.sign(user.toJSON(), jwt_secret_or_key);
