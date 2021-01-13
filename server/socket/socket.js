@@ -94,7 +94,7 @@ const onDisconnection = (io, socket, user) => {
                 if (room.game.turn.move_x) { // dang game ma thoat
                     addGame({
                         room: room.name,
-                        playedDate: new Date().toUTCString(),
+                        playedDate: new Date().toLocaleString(),
                         game: room.game,
                         winner: room.players.find(item => item !== user)
                     })
