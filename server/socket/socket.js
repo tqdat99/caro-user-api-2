@@ -51,10 +51,11 @@ const updateUserDbService = (winnerName, loserName) => {
         .then((promiseArray) => {
             const winner = promiseArray[0][0]
             const loser = promiseArray[1][0]
-            // const winnerPlus = (winner.cups < loser.cups) ? 2 : 1
-            // const loserLost = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? 2 : 1
-            const winnerCups = (winner.cups < loser.cups) ? winner.cups + 2 : winner.cups + 1
-            const loserCups = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? loser.cups - 2 : loser.cups - 1
+            let winnerCups = (winner.cups < loser.cups) ? winner.cups + 2 : winner.cups + 1
+            let loserCups = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? loser.cups - 2 : loser.cups - 1
+            if (loserCups < 0) {
+                loserCups = 0
+            }
             let newLevel = winner.level
             if (winner.cups >= 20) newLevel = 'silver'
             else if (winner.cups >= 50) newLevel = 'gold'
