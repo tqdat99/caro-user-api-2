@@ -114,8 +114,8 @@ const onDisconnection = (io, socket, user) => {
 
                 } else { // het game roi moi quit
                     room.players = room.players.filter(item => item !== user)
-                    // io.emit('Active-Rooms', Array.from(roomsMap.values()))
                     if (room.type==='buddy') room.type = 'public'
+                    io.emit('Active-Rooms', Array.from(roomsMap.values()))
                 }
             } else if (room.players.length === 1) {
                 if (room.players[0] === user) {
@@ -441,6 +441,18 @@ const onJoinRoom = (io, socket, user) => {
 const onInvitePlayer = (io, socket, user) => {
     socket.on('Invite-Player', (player, callback) => {
         console.log(`${user} - ${socket.id} INVITE PLAYER`)
+        //
+        for (let room of roomsMap.values()) {
+            if (room.players.find(item => item === player)) {
+                return
+            }
+        }
+        for (let room of randomRoom) {
+            if (room.players.find(item => item === player)) {
+                return
+            }
+        }
+
         const roomId = new Date().getTime()
         const newRoom = {
             id: roomId,
@@ -471,17 +483,6 @@ const onInvitePlayer = (io, socket, user) => {
         callback(newRoom)
         io.emit('Active-Rooms', Array.from(roomsMap.values()))
 
-        //
-        for (let room of roomsMap.values()) {
-            if (room.players.find(item => item === player)) {
-                return
-            }
-        }
-        for (let room of randomRoom) {
-            if (room.players.find(item => item === player)) {
-                return
-            }
-        }
         const socketArray = usersMap.get(player)
         for (let socketid of socketArray) {
             io.to(socketid).emit('Invitation', {
