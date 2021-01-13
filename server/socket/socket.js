@@ -11,15 +11,13 @@ module.exports = function (io, socket) {
     /*ON CONNECTION*/
     const user = socket.handshake.query.username;
     const admin = socket.handshake.query.admin;
-    console.log(admin);
+    // console.log(admin);
     console.log(`${user} - ${socket.id} CONNECT`)
     if (admin == 1) {
         console.log('admin');
         io.emit('Online-Users', Array.from(usersMap.keys()))
-    }
-    else {
+    } else {
         console.log('user');
-
         if (usersMap.has(user)) {
             usersMap.get(user).add(socket.id)
         } else {
@@ -53,6 +51,8 @@ const updateUserDbService = (winnerName, loserName) => {
         .then((promiseArray) => {
             const winner = promiseArray[0][0]
             const loser = promiseArray[1][0]
+            // const winnerPlus = (winner.cups < loser.cups) ? 2 : 1
+            // const loserLost = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? 2 : 1
             const winnerCups = (winner.cups < loser.cups) ? winner.cups + 2 : winner.cups + 1
             const loserCups = (loser.cups === 0) ? 0 : (winner.cups < loser.cups) ? loser.cups - 2 : loser.cups - 1
             let newLevel = winner.level
@@ -99,7 +99,6 @@ const onDisconnection = (io, socket, user) => {
                         winner: room.players.find(item => item !== user)
                     })
                     updateUserDbService(room.players.find(item => item !== user), user)
-
                     room.players = room.players.filter(item => item !== user)
                     room.game = {
                         turn: {},
@@ -110,12 +109,13 @@ const onDisconnection = (io, socket, user) => {
                     }
                     io.to(socket.room).emit('Game-Result', {
                         line: [],
-                        message: `${user} has left game!`
+                        message: `@${user} has left game!`
                     })
 
                 } else { // het game roi moi quit
                     room.players = room.players.filter(item => item !== user)
                     // io.emit('Active-Rooms', Array.from(roomsMap.values()))
+                    if (room.type==='buddy') room.type = 'public'
                 }
             } else if (room.players.length === 1) {
                 if (room.players[0] === user) {
@@ -131,50 +131,103 @@ const onDisconnection = (io, socket, user) => {
 const onFindRandomRoom = (io, socket, user) => {
     socket.on("Find-Random-Room", (callback) => {
         console.log(`${user} - ${socket.id} FIND RANDOM ROOM`)
-        for (let i = 0; i < randomRoom.length; i++) {
-            if (randomRoom[i].players.length < 2) {
-                randomRoom[i].players.push(user)
-                randomRoom[i].game.turn.move_o = user
-                randomRoom[i].game.messages.push({
-                    sender: "admin",
-                    message: `${user} has joined room.`
-                })
-                socket.room = randomRoom[i].id
-                socket.type = 'random'
-                socket.join(randomRoom[i].id)
-                io.to(randomRoom[i].id).emit('Someone-Join-Room', randomRoom[i])
-                callback(randomRoom[i])
-                return
-            }
-        }
-        const roomId = new Date().getTime()
-        const newRoom = {
-            id: roomId,
-            players: [user],
-            type: 'random',
-            name: "Random room",
-            password: "",
-            time: 2,
-            game: {
-                turn: {
-                    move_x: user
-                },
-                history: [
-                    Array(BOARD_SIZE * BOARD_SIZE).fill(null)
-                ],
-                messages: [
-                    {
-                        sender: 'admin',
-                        message: `${user} has joined room.`
+        // old
+        // for (let i = 0; i < randomRoom.length; i++) {
+        //     if (randomRoom[i].players.length < 2) {
+        //         randomRoom[i].players.push(user)
+        //         randomRoom[i].game.turn.move_o = user
+        //         randomRoom[i].game.messages.push({
+        //             sender: "admin",
+        //             message: `${user} has joined room.`
+        //         })
+        //         socket.room = randomRoom[i].id
+        //         socket.type = 'random'
+        //         socket.join(randomRoom[i].id)
+        //         io.to(randomRoom[i].id).emit('Someone-Join-Room', randomRoom[i])
+        //         callback(randomRoom[i])
+        //         return
+        //     }
+        // }
+        // const roomId = new Date().getTime()
+        // const newRoom = {
+        //     id: roomId,
+        //     players: [user],
+        //     type: 'random',
+        //     name: "Random room",
+        //     password: "",
+        //     time: 2,
+        //     game: {
+        //         turn: {
+        //             move_x: user
+        //         },
+        //         history: [
+        //             Array(BOARD_SIZE * BOARD_SIZE).fill(null)
+        //         ],
+        //         messages: [
+        //             {
+        //                 sender: 'admin',
+        //                 message: `${user} has joined room.`
+        //             }
+        //         ]
+        //     }
+        // }
+        // randomRoom.push(newRoom)
+        // socket.room = newRoom.id
+        // socket.type = 'random'
+        // socket.join(roomId)
+        // callback(newRoom)
+
+        // update
+        getUserBeforeUpdate({displayName: user})
+            .then((response) => {
+                console.log('RESPONSE.LEVEL: ', response[0].level)
+                for (let i = 0; i < randomRoom.length; i++) {
+                    if (randomRoom[i].players.length < 2 && randomRoom[i].level === response[0].level) {
+                        console.log(`RANDOMROOM[${i}].level: ${randomRoom[i].level}`)
+                        randomRoom[i].players.push(user)
+                        randomRoom[i].game.turn.move_o = user
+                        randomRoom[i].game.messages.push({
+                            sender: "admin",
+                            message: `@${user} has joined room.`
+                        })
+                        socket.room = randomRoom[i].id
+                        socket.type = 'random'
+                        socket.join(randomRoom[i].id)
+                        io.to(randomRoom[i].id).emit('Someone-Join-Room', randomRoom[i])
+                        callback(randomRoom[i])
+                        return
                     }
-                ]
-            }
-        }
-        randomRoom.push(newRoom)
-        socket.room = newRoom.id
-        socket.type = 'random'
-        socket.join(roomId)
-        callback(newRoom)
+                }
+                const roomId = new Date().getTime()
+                const newRoom = {
+                    id: roomId,
+                    players: [user],
+                    type: 'random',
+                    name: "Random room",
+                    password: "",
+                    time: 2,
+                    level: response[0].level,
+                    game: {
+                        turn: {
+                            move_x: user
+                        },
+                        history: [
+                            Array(BOARD_SIZE * BOARD_SIZE).fill(null)
+                        ],
+                        messages: [
+                            {
+                                sender: 'admin',
+                                message: `@${user} has joined room.`
+                            }
+                        ]
+                    }
+                }
+                randomRoom.push(newRoom)
+                socket.room = newRoom.id
+                socket.type = 'random'
+                socket.join(roomId)
+                callback(newRoom)
+            })
     })
 }
 
@@ -218,7 +271,7 @@ const onPlayMove = (io, socket, user) => {
             } else {
                 io.to(socket.room).emit('Game-Result', {
                     line: result.line,
-                    message: `${user} won the game! Congratulations!`
+                    message: `@${user} won the game! Congratulations!`
                 })
             }
         }
@@ -271,7 +324,7 @@ const onSurrender = (io, socket, user) => {
         }
         io.to(socket.room).emit('Game-Result', {
             line: [],
-            message: `${user} has surrendered!`
+            message: `@${user} has surrendered!`
         })
     })
 }
@@ -302,7 +355,7 @@ const onTimeOut = (io, socket, user) => {
         }
         io.to(socket.room).emit('Game-Result', {
             line: [],
-            message: `${user} is time out!`
+            message: `@${user} is time out!`
         })
     })
 }
@@ -325,7 +378,7 @@ const onNewGame = (io, socket, user) => {
         }
         room.game.messages.push({
             sender: 'admin',
-            message: `${user} has joined room.`
+            message: `@${user} has joined room.`
         })
         io.to(room.id).emit('Someone-Join-Room', room)
     })
@@ -352,7 +405,7 @@ const onCreateRoom = (io, socket, user) => {
                 messages: [
                     {
                         sender: 'admin',
-                        message: `${user} has joined room.`
+                        message: `@${user} has joined room.`
                     }
                 ]
             }
@@ -374,7 +427,7 @@ const onJoinRoom = (io, socket, user) => {
         room.game.turn.move_o = user
         room.game.messages.push({
             sender: "admin",
-            message: `${user} has joined room.`
+            message: `@${user} has joined room.`
         })
         socket.room = room.id
         socket.type = 'normal'
@@ -406,7 +459,7 @@ const onInvitePlayer = (io, socket, user) => {
                 messages: [
                     {
                         sender: 'admin',
-                        message: `${user} has joined room.`
+                        message: `@${user} has joined room.`
                     }
                 ]
             }
@@ -416,7 +469,7 @@ const onInvitePlayer = (io, socket, user) => {
         socket.type = 'buddy'
         socket.join(roomId)
         callback(newRoom)
-        // io.emit('Active-Rooms', Array.from(roomsMap.values()))
+        io.emit('Active-Rooms', Array.from(roomsMap.values()))
 
         //
         for (let room of roomsMap.values()) {
@@ -449,15 +502,17 @@ const onReplyInvite = (io, socket, user) => {
             room.game.turn.move_o = user
             room.game.messages.push({
                 sender: "admin",
-                message: `${user} has joined room.`
+                message: `@${user} has joined room.`
             })
             socket.room = room.id
             socket.type = 'buddy'
             socket.join(room.id)
             callback(room)
             io.to(room.id).emit('Someone-Join-Room', room)
+            io.emit('Active-Rooms', Array.from(roomsMap.values()))
         } else {
             room.type = 'public'
+            io.to(data.id).emit('Invitation-Decline', user)
             io.emit('Active-Rooms', Array.from(roomsMap.values()))
         }
     })
